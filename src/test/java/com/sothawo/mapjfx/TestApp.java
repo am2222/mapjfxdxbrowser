@@ -20,6 +20,7 @@ import com.sothawo.mapjfx.event.MapViewEvent;
 import com.sothawo.mapjfx.event.MarkerEvent;
 import com.sothawo.mapjfx.offline.OfflineCache;
 import javafx.application.Application;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -34,6 +35,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
+import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -103,7 +105,7 @@ public class TestApp extends Application {
     }
 
     /** the MapView */
-    private MapView mapView;
+    private gfpMapView mapView;
     private MapView mapView2;
 
 // -------------------------- STATIC METHODS --------------------------
@@ -123,7 +125,7 @@ public class TestApp extends Application {
 
         // MapView in the center with an initial coordinate (optional)
         // the MapView is created first as the other elements reference it
-        mapView = new MapView();
+        mapView = new gfpMapView();
         // animate pan and zoom with 500ms
         mapView.setAnimationDuration(500);
         borderPane.setCenter(mapView);
@@ -301,6 +303,8 @@ public class TestApp extends Application {
         primaryStage.show();
 
         logger.finer(() -> "application started.");
+
+
     }
 
     private void initOfflineCache() {
@@ -355,9 +359,27 @@ public class TestApp extends Application {
         hbox.setSpacing(5);
         vbox.getChildren().add(hbox);
 
+
+        String wkt = "POLYGON((10.689 -25.092, 34.595 " +
+                "-20.170, 38.814 -35.639, 13.502 " +
+                "-39.155, 10.689 -25.092))";
+
         Button btn = new Button();
         btn.setText("Karlsruhe castle");
-        btn.setOnAction(event -> mapView.setCenter(coordKarlsruheCastle));
+//        btn.setOnAction(event ->mapView.addWktFeatureToOverlay(wkt,true));
+        btn.setOnAction(new EventHandler<javafx.event.ActionEvent>() {
+            @Override
+            public void handle(javafx.event.ActionEvent event) {
+//                mapView.addWktFeatureToOverlay(wkt,true);
+//                mapView.zoomToOverlay();
+
+//                mapView.setStartMeasure("Polygon");
+
+                mapView.setBackgroundMap("street");
+
+
+            }
+        });
         hbox.getChildren().add(btn);
 
         btn = new Button();

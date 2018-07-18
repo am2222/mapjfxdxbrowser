@@ -65,7 +65,6 @@ var _map = new ol.Map({
 
 var _view = _map.getView();
 
-
 /*******************************************************************************************************************
  * Connector object for the java application with the functions to be called.
  * @param javaConnector the javaConnector object
@@ -144,6 +143,11 @@ JSMapView.prototype.init = function () {
 
     _map.addInteraction(dragBox);
 };
+
+
+
+
+
 
 /**
  * sets the center of the map
@@ -622,6 +626,8 @@ JSMapView.prototype.reportExtent = function () {
     }
 };
 
+
+
 /**
  * @return JSMapView object
  */
@@ -630,5 +636,4 @@ function getJSMapView() {
     jsMapView.init();
     return jsMapView;
 }
-
 

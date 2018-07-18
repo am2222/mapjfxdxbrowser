@@ -88,7 +88,7 @@ import static java.util.Objects.requireNonNull;
  * @author P.J. Meisch (pj.meisch@sothawo.com).
  */
 @SuppressWarnings("UnusedDeclaration")
-public final class MapView extends Region {
+public class MapView extends Region {
 // ------------------------------ FIELDS ------------------------------
 
     /** minimal zoom level, OL defines this as 0. */
@@ -1108,6 +1108,19 @@ public final class MapView extends Region {
         return zoom;
     }
 
+    //-------------------------gfp functions -----------
+    public JSObject getMapview(){
+
+        if(getInitialized()){
+            return jsMapView ;
+        }
+        return null;
+    }
+
+
+
+
+
 // -------------------------- INNER CLASSES --------------------------
 
     /**
@@ -1487,5 +1500,7 @@ public final class MapView extends Region {
             logger.finer(() -> "JS reports extend change: " + extent);
             fireEvent(new MapViewEvent(MapViewEvent.MAP_BOUNDING_EXTENT, extent));
         }
+
+
     }
 }
