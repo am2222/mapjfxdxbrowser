@@ -488,36 +488,36 @@ function addFeatureToVector(wkt, vectorlayer) {
 
 
 
-JSMapView.prototype.addlayer=function (type,url,layer,minres) {
-    switch (type){
-
-        case "wms":
-            var gaswmssource = new ol.source.TileWMS({
-                url:url ,
-                params: {'LAYERS':layer , 'TILED': true},
-                serverType: 'geoserver',
-                crossOrigin: 'anonymous'
-            });
-
-
-            var gaswmslayer = new ol.layer.Tile({
-                source: gaswmssource
-            });
-            if(minres){
-                gaswmslayer.minResolution=minres
-            }
-            _map.addLayer(gaswmslayer);
-
-
-            case "wfs":
-
-
-
-
-    }
-}
-
-
+// JSMapView.prototype.addlayer=function (type,url,layer,minres) {
+//     switch (type){
+//
+//         case "wms":
+//             var gaswmssource = new ol.source.TileWMS({
+//                 url:url ,
+//                 params: {'LAYERS':layer , 'TILED': true},
+//                 serverType: 'geoserver',
+//                 crossOrigin: 'anonymous'
+//             });
+//
+//
+//             var gaswmslayer = new ol.layer.Tile({
+//                 source: gaswmssource
+//             });
+//             if(minres){
+//                 gaswmslayer.minResolution=minres
+//             }
+//             _map.addLayer(gaswmslayer);
+//
+//
+//             case "wfs":
+//
+//
+//
+//
+//     }
+// }
+//
+//
 
 
 JSMapView.prototype.setStartMeasure=function (type) {

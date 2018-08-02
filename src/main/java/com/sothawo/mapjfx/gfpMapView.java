@@ -40,8 +40,8 @@ public final class gfpMapView extends MapView {
     }
 
     /**
-     *
-     * @param type nobase,street,hybrid
+     * Hint: call setBackgroundMapBaseURL first and set background map url to load these maps
+     * @param type nobase or null will hide the base map,street,hybrid
      */
     public void setBackgroundMap(String type) {
         if (getInitialized()) {
@@ -50,4 +50,12 @@ public final class gfpMapView extends MapView {
         }
     }
 
+
+    public void setBackgroundMapBaseURL(String url){
+
+        if (getInitialized()) {
+            logger.finer(() -> "setBackgroundMapBaseURL: " + url);
+            getMapview().call("setBackgroundMapBaseURL",url);
+        }
+    }
 }
