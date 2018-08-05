@@ -58,6 +58,11 @@ var _layersStamenWC = new ol.layer.Group({
 var _map = new ol.Map({
     target: 'map',
     layers: _layersOSM,
+    controls: ol.control.defaults({
+        zoom: false,
+        attribution: false,
+        rotate: true
+    }),
     view: new ol.View({
         zoom: 1
     })
@@ -87,11 +92,11 @@ JSMapView.prototype.toString = function () {
  * initializes the JSMapView and the map.
  */
 JSMapView.prototype.init = function () {
-    _map.on('pointermove', function (evt) {
-        var coordinate = cToWGS84(evt.coordinate);
-        // lat/lon reversion
-        this.javaConnector.pointerMovedTo(coordinate[1], coordinate[0]);
-    }, this);
+    // _map.on('pointermove', function (evt) {
+    //     var coordinate = cToWGS84(evt.coordinate);
+    //     // lat/lon reversion
+    //     this.javaConnector.pointerMovedTo(coordinate[1], coordinate[0]);
+    // }, this);
 
     _map.on('singleclick', function (evt) {
         var coordinate = cToWGS84(evt.coordinate);
@@ -99,37 +104,37 @@ JSMapView.prototype.init = function () {
         this.javaConnector.singleClickAt(coordinate[1], coordinate[0]);
     }, this);
 
-    _map.on('postrender',
-        function (evt) {
-            if (!this.anchorsPatched) {
-                var anchors = document.getElementById('map').getElementsByTagName('a');
-                for (var i = 0; i < anchors.length; ++i) {
-                    var anchor = anchors[i];
-                    var href = anchor.href;
-                    // only patch if not already a javascript link
-                    if (href && href.lastIndexOf('javascript', 0) !== 0) {
-                        this.javaConnector.debug('patching anchor for ' + href);
-                        anchor.href = 'javascript:_javaConnector.showLink("' + href + '");';
-                        this.anchorsPatched = true;
-                    }
-                }
-            }
-        }, this);
+    // _map.on('postrender',
+    //     function (evt) {
+    //         if (!this.anchorsPatched) {
+    //             var anchors = document.getElementById('map').getElementsByTagName('a');
+    //             for (var i = 0; i < anchors.length; ++i) {
+    //                 var anchor = anchors[i];
+    //                 var href = anchor.href;
+    //                 // only patch if not already a javascript link
+    //                 if (href && href.lastIndexOf('javascript', 0) !== 0) {
+    //                     this.javaConnector.debug('patching anchor for ' + href);
+    //                     anchor.href = 'javascript:_javaConnector.showLink("' + href + '");';
+    //                     this.anchorsPatched = true;
+    //                 }
+    //             }
+    //         }
+    //     }, this);
 
-    _view.on('change:center', function (evt) {
-        var center = cToWGS84(evt.target.get('center'));
-        // lat/lon reversion
-        this.javaConnector.centerMovedTo(center[1], center[0]);
-        this.reportExtent();
-    }, this);
+    // _view.on('change:center', function (evt) {
+    //     var center = cToWGS84(evt.target.get('center'));
+    //     // lat/lon reversion
+    //     // this.javaConnector.centerMovedTo(center[1], center[0]);
+    //     // this.reportExtent();
+    // }, this);
 
-    _view.on('change:resolution', function (evt) {
-        this.javaConnector.zoomChanged(_view.getZoom());
-        this.reportExtent();
-    }, this);
+    // _view.on('change:resolution', function (evt) {
+    //     // this.javaConnector.zoomChanged(_view.getZoom());
+    //     // this.reportExtent();
+    // }, this);
 
     _map.on('change:size', function (evt) {
-        this.reportExtent();
+       - this.reportExtent();
     }, this);
 
     // a DragBox interaction
@@ -141,7 +146,7 @@ JSMapView.prototype.init = function () {
         this.javaConnector.extentSelected(extent[1], extent[0], extent[3], extent[2]);
     }, this);
 
-    _map.addInteraction(dragBox);
+    // _map.addInteraction(dragBox);
 };
 
 
@@ -619,8 +624,8 @@ JSMapView.prototype.contextmenu = function (browserEvent) {
 
 JSMapView.prototype.reportExtent = function () {
     try {
-        var extent = eToWGS84(_view.calculateExtent(_map.getSize()));
-        this.javaConnector.extentChanged(extent[1], extent[0], extent[3], extent[2]);
+        // var extent = eToWGS84(_view.calculateExtent(_map.getSize()));
+        // this.javaConnector.extentChanged(extent[1], extent[0], extent[3], extent[2]);
     } catch (e) {
         // ignore
     }

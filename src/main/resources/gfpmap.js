@@ -216,9 +216,7 @@ var back_road=    new ol.layer.Tile({
         url: background_base_url+'/geosuite/api/mbtile/road/{z}/{x}/{y}'
     })
 });
-_map.addLayer(back_sattlite);
-_map.addLayer(back_road);
-back_road.setVisible(false);
+
 
 
 function setbackgrounmap(type) {
@@ -477,6 +475,17 @@ var switcher = new ol.control.LayerSwitcher(
         {
             if(l.get("bbox_"))
                 _map.getView().fit(l.get("bbox_"), {size:_map.getSize(), padding: [15, 0, 0, 0],duration: 2000});
+            var ltype=l.get("type_");
+            if(ltype){
+
+                switch (ltype){
+                    case 'wms':
+
+
+                    case 'wfs':
+
+                }
+            }
 
         }
     });
@@ -885,7 +894,7 @@ var ov = new ol.control.Globe(
         // align: 'right',
         panAnimation: "elastic"
     });
-_map.addControl(ov);
+// _map.addControl(ov);
 
 function DisableGlobe() {
     try{
@@ -905,45 +914,72 @@ function DisableGlobe() {
 // TODO: zoom to layer
 
 
-
+var _layers_bbox=[];
+function isInArray(value, array) {
+    return array.indexOf(value) > -1;
+}
 function getlayersbbox(gaswmslayer, url,layer) {
-    var url = url+'?request=GetCapabilities&service=WMS&version=1.1.1';
-    var parser = new ol.format.WMSCapabilities();
-    $.ajax(url).then(function(response) {
-        var result = parser.read(response);
-        var Layers = result.Capability.Layer.Layer;
-        var extent;
-        for (var i=0, len = Layers.length; i<len; i++) {
-            var layerobj = Layers[i];
-            if (layerobj.Name == layer) {
-                extent = layerobj.BoundingBox[0].extent;
-                break;
-            }
-            console.log(layerobj.Name);
+    var extent;
+    for (var i=0, len = _layers_bbox.length; i<len; i++) {
+        var layerobj = _layers_bbox[i];
+        if (layerobj.name == layer) {
+            extent = layerobj.extent;
+            break;
         }
-        if(!extent)
-            return;
+    }
 
-        console.log(extent);
-
+    if(extent){
         gaswmslayer.set("bbox_",extent)
-        // THIS DOES NOT WORK
-        // map.getView().fitExtent(extent, map.getSize());
-    });
+    }else{
+
+            var url = url+'?request=GetCapabilities&service=WMS&version=1.1.1';
+            var parser = new ol.format.WMSCapabilities();
+            // console.log("layer extent url is " + url);
+            var jqxhr = $.ajax( {
+                crossDomain:true,
+                url:url,
+            } )
+                .done(function(response ) {
+                    var result = parser.read(response);
+                    var Layers = result.Capability.Layer.Layer;
+
+                    for (var i=0, len = Layers.length; i<len; i++) {
+                        var layerobj = Layers[i];
+                        var layer_ = {name:layerobj.Name, extent:layerobj.BoundingBox[0].extent};
+                       if(!isInArray(layer_,_layers_bbox)){
+                           _layers_bbox.push(layer_);
+                       }
+
+                        if (layerobj.Name == layer) {
+                            extent = layerobj.BoundingBox[0].extent;
+                            break;
+                        }
+                    }
+                    if(!extent){
+                        console.log("could not find respurce " );
+                        return;
+                    }
+
+                    gaswmslayer.set("bbox_",extent)
+                })
+                .fail(function() {
+                    console.log( "error" );
+                })
+                .always(function() {
+                    console.log( "complete" );
+                });
+    }
 }
 
 
 /////JSMAPVIEW wrapper functions
 JSMapView.prototype.setDisableGlobe=function () {
-
     DisableGlobe();
 }
 
 JSMapView.prototype.setEnableGlobe=function () {
-
     DisableGlobe();
     _map.addControl(ov);
-
 }
 
 
@@ -957,7 +993,7 @@ JSMapView.prototype.addlayer=function (type,url,workspace,layer,minres,title,noS
                 url:url ,
                 params: {'LAYERS':workspace+":"+layer , 'TILED': true},
                 serverType: 'geoserver',
-                crossOrigin: 'anonymous'
+                // crossOrigin: 'anonymous'
             });
 
 
@@ -971,6 +1007,7 @@ JSMapView.prototype.addlayer=function (type,url,workspace,layer,minres,title,noS
                 gaswmslayer.minResolution=minres
             }
             _map.addLayer(gaswmslayer);
+            gaswmslayer.set("type_",'wms');
             getlayersbbox(gaswmslayer,url,layer);
 
             case "wfs":
@@ -1033,6 +1070,26 @@ JSMapView.prototype.setBackgroundMapBaseURL = function (baseurl) {
             url: background_base_url+'/geosuite/api/mbtile/sattlite/{z}/{x}/{y}'
         })
     });
+
+    ov = new ol.control.Globe(
+        {	layers: [back_road,back_sattlite],
+            follow: true,
+            // align: 'right',
+            panAnimation: "elastic"
+        });
+
+    try {
+        _map.removeLayer(back_sattlite);
+
+    }catch (e){}
+    try {
+    _map.removeLayer(back_road);
+    }catch (e){}
+
+
+    _map.addLayer(back_sattlite);
+    _map.addLayer(back_road);
+    back_road.setVisible(false);
 };
 
 
@@ -1052,3 +1109,148 @@ JSMapView.prototype.setWmsQueryLayer = function (url,workspace,layer) {
 };
 
 
+JSMapView.prototype.addTestwms = function () {
+//     console.log("add test wms");
+//
+//     var gaswmssource = new ol.source.TileWMS({
+//         url:"http://127.0.0.1:8080/geoserver/gas/wms/" ,
+//         params: {'LAYERS':'gas:GasNet_parcel', 'TILED': true},
+//         serverType: 'geoserver',
+//         // crossOrigin: 'anonymous'
+//     });
+//
+//
+//     var gaswmslayer = new ol.layer.Tile({
+//         source: gaswmssource,
+//         title:"title",
+//         noSwitcherDelete:true,
+//         allwaysOnTop:false,
+//     });
+//     console.log("add to map");
+//     _map.addLayer(gaswmslayer);
+//     // _map.addLayer( new ol.layer.Tile({
+//     //     source: new ol.source.TileWMS({
+//     //         url: "http://127.0.0.1:8080/geoserver/gas/wms/",
+//     //         params: {'layers':'gas:GasNet_parcel', 'TILED': true},
+//     //         serverType: 'geoserver',
+//     //         crossOrigin: 'anonymous'
+//     //
+//     //     }),
+//     //     title:"title",
+//     //     noSwitcherDelete:true,
+//     //     allwaysOnTop:false,
+//     // }));
+// //, 'TILED': true
+//     getlayersbbox(gaswmslayer,"http://127.0.0.1:8080/geoserver/gas/wms","GasNet_parcel");
+//
+//
+//     var layerWFS = new ol.layer.Vector({
+//         source: new ol.source.Vector({
+//             loader: function (extent) {
+//                 $.ajax('http://127.0.0.1:8080/geoserver/gas/wfs', {
+//                     type: 'GET',
+//                     data: {
+//                         service: 'WFS',
+//                         version: '1.1.0',
+//                         request: 'GetFeature',
+//                         typename: 'GasNet_parcel',
+//                         srsname: 'EPSG:3857',
+//                         outputFormat: 'application/json',
+//                         bbox: extent.join(',') + ',EPSG:3857'
+//                     }
+//                 }).done(function (response) {
+//                     layerWFS
+//                         .getSource()
+//                         .addFeatures(new ol.format.GeoJSON()
+//                             .readFeatures(response));
+//                 });
+//             },
+//             strategy: ol.loadingstrategy.bbox,
+//             projection: 'EPSG:3857'
+//         })
+//     });
+
+   // _map.addLayer(layerWFS);
+    // var layerWFS = new ol.layer.Vector({
+    //     source: new ol.source.Vector({
+    //         loader: function (extent) {
+    //             $.ajax('http://127.0.0.1:8080/geoserver/gas/wfs', {
+    //                 type: 'GET',
+    //                 data: {
+    //                     service: 'WFS',
+    //                     version: '1.1.0',
+    //                     request: 'GetFeature',
+    //                     typename: 'GasNet_parcel',
+    //                     srsname: 'EPSG:3857',
+    //                     outputFormat: 'text/javascript',
+    //                     bbox: extent.join(',') + ',EPSG:3857'
+    //                 },
+    //                 dataType: 'jsonp',
+    //                 jsonpCallback:'callback:loadFeatures',
+    //                 jsonp: 'format_options'
+    //             })
+    //         },
+    //         strategy: ol.loadingstrategy.bbox,
+    //         projection: 'EPSG:3857'
+    //     })
+    // });
+    //
+    // window.loadFeatures = function (response) {
+    //     layerWFS
+    //         .getSource()
+    //         .addFeatures(new ol.format.GeoJSON().readFeatures(response));
+    // };
+
+    set_editlayer('gas:GasNet_parcel','http://127.0.0.1:8080',1);
+};
+
+var formatGML = new ol.format.GML({
+    featureNS: 'http://127.0.0.1:8080/geoserver/gas/ows',
+    featureType: 'gas:GasNet_riser',
+    srsName: 'EPSG:3857'
+});
+
+
+var sourceWFS;
+var layerWFS;
+function set_editlayer(featureNS,url,maxres,title) {
+
+    alert("set editlayer")
+    formatGML.featureType=featureNS;//'gas:GasNet_riser';
+    sourceWFS = new ol.source.Vector({
+        format: new ol.format.GeoJSON(),
+        url: function(extent) {
+            return url+'/geoserver/ows?service=WFS&version=1.0.0&request=GetFeature&' +
+                'typeName='+featureNS+'&outputFormat=application/json' +
+                '&bbox=' + extent.join(',') + ',EPSG:3857';
+        },
+        strategy: ol.loadingstrategy.bbox,
+        serverType: 'geoserver',
+        crossOrigin: 'anonymous'
+    });
+    layerWFS = new ol.layer.Vector({
+        source: sourceWFS,
+        maxResolution:maxres,
+        title:title,
+        noSwitcherDelete:true,
+        allwaysOnTop:true,
+    });
+    try{
+        _map.removeLayer(layerWFS);
+    }catch (e){}
+
+    layerWFS.set("type_",'wfs');
+    _map.addLayer(layerWFS);
+    var interactionSnap = new ol.interaction.Snap({
+        source: layerWFS.getSource()
+    });
+    _map.addInteraction(interactionSnap);
+
+    getlayersbbox(layerWFS,"http://127.0.0.1:8080/geoserver/gas/wms","GasNet_parcel");
+}
+
+function remove_edit_layer() {
+    try{
+        _map.removeLayer(layerWFS);
+    }catch (e){}
+}

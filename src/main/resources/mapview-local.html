@@ -198,12 +198,18 @@ Copyright 2015-2017 Peter-Josef Meisch (pj.meisch@sothawo.com)
     jsMapView.setZoom(18, 0);
     jsMapView.setCenter(49.013517, 8.404435, 0);
 
+    //backgroun layer
+    jsMapView.setBackgroundMapBaseURL("http://127.0.0.1:8000");
+
+    jsMapView.setBackgrounMap("street")
+    jsMapView.setEnableGlobe();
+
+
+
+    //adding layer
     jsMapView.addlayer("wms","http://127.0.0.1:8080/geoserver/gas/wms","gas","GasNet_parcel",null,
         "پارسل ها",true,false);
 
-    jsMapView.setBackgroundMapBaseURL("http://192.168.1.3");
-
-    jsMapView.setBackgrounMap("street");
     var geojsonObject = {
         'type': 'FeatureCollection',
         'crs': {
@@ -280,7 +286,7 @@ Copyright 2015-2017 Peter-Josef Meisch (pj.meisch@sothawo.com)
 
     jsMapView.setEnableSelect();
 
-
+    jsMapView.addTestwms();
     var addAll = function () {
         // jsMapView.addMarker('castle-marker', './markers/blue_map_marker.png', 49.013517, 8.404435, -32, -64);
         // jsMapView.addLabel('castle-label', 'Das Schloss', '', 49.013517, 8.404435, 0, 0);
@@ -291,9 +297,9 @@ Copyright 2015-2017 Peter-Josef Meisch (pj.meisch@sothawo.com)
         // jsMapView.addwktfeature(wkt,true);
         // jsMapView.zoomtoOverlayLayer();
 
-        // jsMapView.setBackgrounMap("street")
-        // jsMapView.setDisableGlobe();
 
+        // jsMapView.setDisableGlobe();
+        jsMapView.addTestwms();
 
     };
 

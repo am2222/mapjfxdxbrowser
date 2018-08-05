@@ -46,10 +46,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLConnection;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
@@ -103,6 +100,7 @@ public class MapView extends Region {
 
     /** URL of the html code for the WebView. */
     private static final String MAPVIEW_HTML = "/mapview.html";
+    private static final String MAPVIEW_URL = "file:///D:/Desktop_app2/mapjfx/src/main/resources/mapview-local.html";
     private static final String MAP_VIEW_NOT_YET_INITIALIZED = "MapView not yet initialized";
 
     /** number of retries if Javascript object is not ready. */
@@ -795,6 +793,7 @@ public class MapView extends Region {
             );
             // do the load
             logger.finer("load html into WebEngine");
+//            webEngine.load(MAPVIEW_URL);
             webEngine.loadContent(html);
         });
     }
@@ -809,6 +808,7 @@ public class MapView extends Region {
     private Optional<String> loadMapViewHtml() {
         String mapViewHtml = null;
         URL mapviewURL = getClass().getResource(MAPVIEW_HTML);
+
         if (null == mapviewURL) {
             logger.severe(() -> "resource not found: " + MAPVIEW_HTML);
         } else {

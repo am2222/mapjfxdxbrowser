@@ -54,7 +54,6 @@ public class TestApp extends Application {
 // ------------------------------ FIELDS ------------------------------
 
     private static final Logger logger;
-
     /** some coordinates from around town */
     private static final Coordinate coordKarlsruheCastle = new Coordinate(49.013517, 8.404435);
     private static final Coordinate coordKarlsruheHarbour = new Coordinate(49.015511, 8.323497);
@@ -100,8 +99,8 @@ public class TestApp extends Application {
 //                .addParam("REQUEST", "GetTile");
 
         wmsParam = new WMSParam()
-                .setUrl("http://geonode.wfp.org:80/geoserver/ows")
-                .addParam("layers", "geonode:admin_2_gaul_2015");
+                .setUrl("http://127.0.0.1:8080/geoserver/gas/wms")
+                .addParam("layers", "gas:GasNet_parcel");
     }
 
     /** the MapView */
@@ -122,7 +121,7 @@ public class TestApp extends Application {
     public void start(final Stage primaryStage) throws Exception {
         logger.info("starting devtest program...");
         final BorderPane borderPane = new BorderPane();
-
+        System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
         // MapView in the center with an initial coordinate (optional)
         // the MapView is created first as the other elements reference it
         mapView = new gfpMapView();
@@ -140,9 +139,10 @@ public class TestApp extends Application {
         // add WMSParam
         mapView.setWMSParam(wmsParam);
 
+
         // listen to MapViewEvent MAP_CLICKED
         mapView.addEventHandler(MapViewEvent.MAP_CLICKED, event -> {
-            logger.info("MAP_CLICKED event at " + event.getCoordinate());
+//            logger.info("MAP_CLICKED event at " + event.getCoordinate());
             event.consume();
             if (marker.getVisible()) {
                 marker.setPosition(event.getCoordinate());
@@ -154,98 +154,98 @@ public class TestApp extends Application {
 
         // listen to MapViewEvent MAP_RIGHT_CLICKED
         mapView.addEventHandler(MapViewEvent.MAP_RIGHT_CLICKED, event -> {
-            logger.info("MAP_RIGHT_CLICKED event at " + event.getCoordinate());
+//            logger.info("MAP_RIGHT_CLICKED event at " + event.getCoordinate());
             event.consume();
         });
 
         // listen to MapViewEvent MAP_EXTENT
         mapView.addEventHandler(MapViewEvent.MAP_EXTENT, event -> {
-            logger.info(() -> "MAP_EXTENT event: " + event.getExtent());
+//            logger.info(() -> "MAP_EXTENT event: " + event.getExtent());
             mapView.setExtent(event.getExtent());
             event.consume();
         });
 
         // listen to MapViewEvent MAP_BOUNDING_EXTENT
         mapView.addEventHandler(MapViewEvent.MAP_BOUNDING_EXTENT, event -> {
-            logger.info(() -> "MAP_BOUNDING_EXTENT event: " + event.getExtent());
+//            logger.info(() -> "MAP_BOUNDING_EXTENT event: " + event.getExtent());
             event.consume();
         });
 
         // listen to MARKER_CLICKED event.
         mapView.addEventHandler(MarkerEvent.MARKER_CLICKED, event -> {
-            logger.info("MARKER_CLICKED event: " + event.getMarker());
+//            logger.info("MARKER_CLICKED event: " + event.getMarker());
             event.consume();
         });
         // listen to MARKER_MOUSE_DOWN event.
         mapView.addEventHandler(MarkerEvent.MARKER_MOUSE_DOWN, event -> {
-            logger.info("MARKER_MOUSE_DOWN event: " + event.getMarker());
+//            logger.info("MARKER_MOUSE_DOWN event: " + event.getMarker());
             event.consume();
         });
         // listen to MARKER_MOUSE_UP event.
         mapView.addEventHandler(MarkerEvent.MARKER_MOUSE_UP, event -> {
-            logger.info("MARKER_MOUSE_UP event: " + event.getMarker());
+//            logger.info("MARKER_MOUSE_UP event: " + event.getMarker());
             event.consume();
         });
         // listen to MARKER_DOUBLE_CLICKED event.
         mapView.addEventHandler(MarkerEvent.MARKER_DOUBLE_CLICKED, event -> {
-            logger.info("MARKER_DOUBLE_CLICKED event: " + event.getMarker());
+//            logger.info("MARKER_DOUBLE_CLICKED event: " + event.getMarker());
             event.consume();
         });
         // listen to MARKER_RIGHT_CLICKED event.
         mapView.addEventHandler(MarkerEvent.MARKER_RIGHT_CLICKED, event -> {
-            logger.info("MARKER_RIGHT_CLICKED event: " + event.getMarker());
+//            logger.info("MARKER_RIGHT_CLICKED event: " + event.getMarker());
             event.consume();
         });
         // listen to MARKER_ENTERED event.
         mapView.addEventHandler(MarkerEvent.MARKER_ENTERED, event -> {
-            logger.info("MARKER_ENTERED event: " + event.getMarker());
+//            logger.info("MARKER_ENTERED event: " + event.getMarker());
             event.consume();
         });
         // listen to MARKER_EXITED event.
         mapView.addEventHandler(MarkerEvent.MARKER_EXITED, event -> {
-            logger.info("MARKER_EXITED event: " + event.getMarker());
+//            logger.info("MARKER_EXITED event: " + event.getMarker());
             event.consume();
         });
         // listen to MAPLABEL_MOUSE_DOWN event.
         mapView.addEventHandler(MapLabelEvent.MAPLABEL_MOUSE_DOWN, event -> {
-            logger.info("MAPLABEL_MOUSE_DOWN event: " + event.getMapLabel());
+//            logger.info("MAPLABEL_MOUSE_DOWN event: " + event.getMapLabel());
             event.consume();
         });
         // listen to MAPLABEL_MOUSE_UP event.
         mapView.addEventHandler(MapLabelEvent.MAPLABEL_MOUSE_UP, event -> {
-            logger.info("MAPLABEL_MOUSE_UP event: " + event.getMapLabel());
+//            logger.info("MAPLABEL_MOUSE_UP event: " + event.getMapLabel());
             event.consume();
         });
         // listen to MAPLABEL_CLICKED event.
         mapView.addEventHandler(MapLabelEvent.MAPLABEL_CLICKED, event -> {
-            logger.info("MAPLABEL_CLICKED event: " + event.getMapLabel());
+//            logger.info("MAPLABEL_CLICKED event: " + event.getMapLabel());
             event.consume();
         });
         // listen to MAPLABEL_RIGHT_CLICKED event.
         mapView.addEventHandler(MapLabelEvent.MAPLABEL_RIGHT_CLICKED, event -> {
-            logger.info("MAPLABEL_RIGHT_CLICKED event: " + event.getMapLabel());
+//            logger.info("MAPLABEL_RIGHT_CLICKED event: " + event.getMapLabel());
             event.consume();
         });
         // listen to MAPLABEL_DOUBLE_CLICKED event.
         mapView.addEventHandler(MapLabelEvent.MAPLABEL_DOUBLE_CLICKED, event -> {
-            logger.info("MAPLABEL_DOUBLE_CLICKED event: " + event.getMapLabel());
+//            logger.info("MAPLABEL_DOUBLE_CLICKED event: " + event.getMapLabel());
             event.consume();
         });
         // listen to MAPLABEL_ENTERED event.
         mapView.addEventHandler(MapLabelEvent.MAPLABEL_ENTERED, event -> {
-            logger.info("MAPLABEL_ENTERED event: " + event.getMapLabel());
+//            logger.info("MAPLABEL_ENTERED event: " + event.getMapLabel());
             event.consume();
             event.getMapLabel().setCssClass("green-label");
         });
         // listen to MAPLABEL_EXITED event.
         mapView.addEventHandler(MapLabelEvent.MAPLABEL_EXITED, event -> {
-            logger.info("MAPLABEL_EXITED event: " + event.getMapLabel());
+//            logger.info("MAPLABEL_EXITED event: " + event.getMapLabel());
             event.consume();
             event.getMapLabel().setCssClass("blue-label");
         });
         // listen to MAP_POINTER_MOVED event
         mapView.addEventHandler(MapViewEvent.MAP_POINTER_MOVED, event -> {
-            logger.info("MAP_POINTER_MOVED event: " + event.getCoordinate());
+//            logger.info("MAP_POINTER_MOVED event: " + event.getCoordinate());
             event.consume();
         });
 
@@ -259,21 +259,21 @@ public class TestApp extends Application {
 //                mapView.setZoom(0);
 
                 // add two markers without keeping a ref to them, they should disappear from the map when gc'ed
-                mapView.addMarker(Marker.createProvided(Marker.Provided.GREEN).setPosition(coordKarlsruheHarbour)
-                        .setVisible(true));
-                mapView.addMarker(
-                        Marker.createProvided(Marker.Provided.ORANGE).setPosition(coordKarlsruheStation).setVisible(
-                                true));
+//                mapView.addMarker(Marker.createProvided(Marker.Provided.GREEN).setPosition(coordKarlsruheHarbour)
+//                        .setVisible(true));
+//                mapView.addMarker(
+//                        Marker.createProvided(Marker.Provided.ORANGE).setPosition(coordKarlsruheStation).setVisible(
+//                                true));
 
                 // add a coordinate line to be gc'ed
-                mapView.addCoordinateLine(
-                        new CoordinateLine(coordKarlsruheHarbour, coordKarlsruheStation, coordKarlsruheCastle)
-                                .setVisible(true)
-                                .setColor(Color.FUCHSIA).setWidth(5));
+//                mapView.addCoordinateLine(
+//                        new CoordinateLine(coordKarlsruheHarbour, coordKarlsruheStation, coordKarlsruheCastle)
+//                                .setVisible(true)
+//                                .setColor(Color.FUCHSIA).setWidth(5));
 
                 // add a label to be gc'ed
-                mapView.addLabel(new MapLabel("clean me up").setPosition(coordKarlsruheStation)
-                        .setVisible(true));
+//                mapView.addLabel(new MapLabel("clean me up").setPosition(coordKarlsruheStation)
+//                        .setVisible(true));
                 topPane.setDisable(false);
             }
         });
@@ -286,15 +286,16 @@ public class TestApp extends Application {
 
         mapView2 = new MapView();
         mapView2.setMinWidth(200);
-        borderPane.setRight(mapView2);
-        mapView2.initializedProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
-                mapView2.setCenter(coordKarlsruheHarbour);
-                mapView2.setZoom(10);
-            }
-        });
-        mapView2.initialize();
 
+//        borderPane.setRight(mapView2);
+//        mapView2.initializedProperty().addListener((observable, oldValue, newValue) -> {
+//            if (newValue) {
+//                mapView2.setCenter(coordKarlsruheHarbour);
+//                mapView2.setZoom(10);
+//            }
+//        });
+//        mapView2.initialize();
+//        mapView.getOfflineCache().setActive(false);
         // show the whole thing
         final Scene scene = new Scene(borderPane, 1200, 800);
 
@@ -304,15 +305,14 @@ public class TestApp extends Application {
 
         logger.finer(() -> "application started.");
 
-
     }
 
     private void initOfflineCache() {
-        final OfflineCache offlineCache = OfflineCache.INSTANCE;
-        (new File("tmpdata/cache")).mkdirs();
-        offlineCache.setCacheDirectory(FileSystems.getDefault().getPath("tmpdata/cache"));
-        offlineCache.setActive(true);
-        offlineCache.setNoCacheFilters(Collections.singletonList(".*\\.sothawo\\.com/.*"));
+//        final OfflineCache offlineCache = OfflineCache.INSTANCE;
+//        (new File("tmpdata/cache")).mkdirs();
+//        offlineCache.setCacheDirectory(FileSystems.getDefault().getPath("tmpdata/cache"));
+//        offlineCache.setActive(true);
+//        offlineCache.setNoCacheFilters(Collections.singletonList(".*\\.sothawo\\.com/.*"));
     }
 
     /**
@@ -374,12 +374,28 @@ public class TestApp extends Application {
 //                mapView.zoomToOverlay();
 
 //                mapView.setStartMeasure("Polygon");
-
+                //to init basemap you should setBackgroundMapBaseURL to the server ip, read this ip from a
+                //config file
+                mapView.setBackgroundMapBaseURL("http://127.0.0.1:8000");
+                //you can seve last base map in config and load it to save last status
                 mapView.setBackgroundMap("street");
+
+                mapView.setGlobeControl(true);
+
+                ///TO load a layer from server (based on users access)
+
+//                mapView.addlayer("wms","http://127.0.0.1:8080/geoserver/gas/wms","gas","GasNet_parcel",-1,
+//                        "پارسل ها",true,false);
+                mapView.setEditLayer("gas:GasNet_parcel","http://127.0.0.1:8080",1,"پارسل (ویرایش)");
+//                mapView.testwms();
+
 
 
             }
         });
+
+
+
         hbox.getChildren().add(btn);
 
         btn = new Button();
