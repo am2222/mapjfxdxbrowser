@@ -249,6 +249,12 @@ public class TestApp extends Application {
             event.consume();
         });
 
+
+        mapView.addEventHandler(MapViewEvent.MAP_SINGLE_CLICK_AT_FEATURE, event -> {
+            logger.info("MAP_SINGLE_CLICK_AT_FEATURE event: " + event.getURL());
+            event.consume();
+        });
+
         initOfflineCache();
         // add listener for mapView initialization state
         mapView.initializedProperty().addListener((observable, oldValue, newValue) -> {
@@ -370,23 +376,35 @@ public class TestApp extends Application {
         btn.setOnAction(new EventHandler<javafx.event.ActionEvent>() {
             @Override
             public void handle(javafx.event.ActionEvent event) {
-//                mapView.addWktFeatureToOverlay(wkt,true);
+                mapView.addWktFeatureToOverlay(wkt,true);
 //                mapView.zoomToOverlay();
 
 //                mapView.setStartMeasure("Polygon");
                 //to init basemap you should setBackgroundMapBaseURL to the server ip, read this ip from a
                 //config file
-                mapView.setBackgroundMapBaseURL("http://127.0.0.1:8000");
-                //you can seve last base map in config and load it to save last status
-                mapView.setBackgroundMap("street");
+                mapView.setBackgroundMapBaseURL("http://127.0.0.1");
+                mapView.setBackgroundMap("street");  //you can seve last base map in config and load it to save last status
 
+
+                //TO enable select feature
+                mapView.setWMSQueryLayer("http://127.0.0.1:8080/geoserver/gas/wms","gas","GasNet_parcel");
+                mapView.setEnableSelect(true);
+
+                //Then you can listen to map event
+//                mapView.addEventHandler(MapViewEvent.MAP_SINGLE_CLICK_AT_FEATURE, event -> {
+//                    logger.info("MAP_SINGLE_CLICK_AT_FEATURE event: " + event.getURL());
+//                    event.consume();
+//                });
+
+
+                //To enable globe control
                 mapView.setGlobeControl(true);
 
                 ///TO load a layer from server (based on users access)
 
-//                mapView.addlayer("wms","http://127.0.0.1:8080/geoserver/gas/wms","gas","GasNet_parcel",-1,
-//                        "پارسل ها",true,false);
-                mapView.setEditLayer("gas:GasNet_parcel","http://127.0.0.1:8080",1,"پارسل (ویرایش)");
+                mapView.addlayer("wms","http://127.0.0.1:8080/geoserver/gas/wms","gas","GasNet_parcel",-1,
+                        "پارسل ها",true,false);
+                mapView.setEditLayer("gas:GasNet_parcel","http://127.0.0.1:8080",0.5,"پارسل (ویرایش)");
 //                mapView.testwms();
 
 

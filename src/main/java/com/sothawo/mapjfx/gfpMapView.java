@@ -11,7 +11,10 @@ public final class gfpMapView extends MapView {
 
     }
 
-
+    /**
+     * Zooms into selected items in map. this function only selects on overlays. overlays are the objects which are added into map
+     * using wkt, geojson, feature
+     */
     public void zoomToOverlay() {
         if (getInitialized()) {
             logger.finer(() -> "zoomToOverlay: ");
@@ -20,6 +23,11 @@ public final class gfpMapView extends MapView {
     }
 
 
+    /**
+     * Adds a wkt object into map
+     * @param wkt wkt format
+     * @param clear_all  clears all other objects before adding new one
+     */
     public void addWktFeatureToOverlay(String wkt,boolean clear_all) {
         if (getInitialized()) {
             logger.finer(() -> "addwktfeature: " + wkt);
@@ -50,7 +58,10 @@ public final class gfpMapView extends MapView {
         }
     }
 
-
+    /**
+     * Sets url to load base map from
+     * @param url url
+     */
       public void setBackgroundMapBaseURL(String url){
 
         if (getInitialized()) {
@@ -81,7 +92,10 @@ public final class gfpMapView extends MapView {
             }
         }
     }
-
+    /**
+     * Enable or disable Globe object
+     * @param Enable True to enable, False to disable
+     */
     public void setGlobeControl(boolean Enable){
 
         if (getInitialized()) {
@@ -95,6 +109,42 @@ public final class gfpMapView extends MapView {
             }
         }
     }
+
+    /**
+     * Enable Select
+     * @param Enable True to enable, False to disable
+     */
+    public void setEnableSelect(boolean Enable){
+
+        if (getInitialized()) {
+            logger.finer(() -> "setEnableSelect: " + Enable);
+            if(Enable){
+                getMapview().call("setEnableSelect");
+
+            }else{
+                getMapview().call("setDisableSelect");
+
+            }
+        }
+    }
+
+    /**
+     * This function must be called in order to get information when user clicks on map. if this function does not call correctly
+     * the singleClickAtFeature in js (MAP_SINGLE_CLICK_AT_FEATURE in java)  event  will not be called.
+     * @param url wms url of geoserver. this url is sth like "http://127.0.0.1:8080/geoserver/gas/wms"
+     * @param workspace the name of workspace
+     * @param layer layer name. it is better to create a layergroup which includes all of gas layers so we can query all layers at one time
+     */
+    public void setWMSQueryLayer(String url,String workspace,String layer){
+
+        if (getInitialized()) {
+            logger.finer(() -> "setwmsquerylayer: " + url +" "+workspace +" "+layer+" " );
+            getMapview().call("setwmsquerylayer",url,workspace,layer);
+
+        }
+    }
+
+
 
 
     public void setEditLayer(String featureNS,String url,double maxres,String title){

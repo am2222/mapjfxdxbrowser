@@ -73,57 +73,113 @@ function flyTo(location, done) {
 var selectClick = new ol.interaction.Select({
     condition: ol.events.condition.click
 });
+//var selectedFeatures = selectClick.getFeatures();
+selectClick.on('select', function(e) {
+    // var res = '&nbsp;' +
+    //     +
+    //      ' selected features (last operation selected ' + e.selected.length +
+    //      ' and deselected ' + e.deselected.length + ' features)';
+    //
+    var fs=[]
 
+    for(var i=0;i<e.target.getFeatures().getLength();i++){
+        if(!e.target.getFeatures().array_[i].getId()){
+            e.target.getFeatures().array_[i].setId(i);
+        }
+        fs.push( e.target.getFeatures().array_[i]);
+    }
+    var obj = _geojson_format.writeFeatures(fs);
+    var geojson=JSON.stringify(obj);
+    console.log(geojson);
+
+    this.javaConnector.singleClickAtVectorFeature(geojson);
+    //perform wms select
+    // if(!wmsquerylayersource)
+    //     return;
+
+    // var viewResolution = /** @type {number} */ (_view.getResolution());
+    // var url = wmsquerylayersource.getGetFeatureInfoUrl(
+    //     e.mapBrowserEvent.coordinate, viewResolution, 'EPSG:3857',
+    //     {'INFO_FORMAT': 'application/json'});
+    //
+    // get_feature_onclick(url,fs);
+
+});
+var _flag_enable_select=false;
 function setEnableSelect() {
     _map.addInteraction(selectClick);
-    selectClick.on('select', function(e) {
-       // var res = '&nbsp;' +
-       //     +
-       //      ' selected features (last operation selected ' + e.selected.length +
-       //      ' and deselected ' + e.deselected.length + ' features)';
-        //
-        var fs=[]
-
-       for(var i=0;i<e.target.getFeatures().getLength();i++){
-           if(!e.target.getFeatures().array_[i].getId()){
-               e.target.getFeatures().array_[i].setId(i);
-           }
-           fs.push( e.target.getFeatures().array_[i]);
-       }
-        var obj = _geojson_format.writeFeatures(fs);
-        console.log(JSON.stringify(obj));
+    _flag_enable_select=true;
+}
 
 
-        //perform wms select
 
 
-        var viewResolution = /** @type {number} */ (_view.getResolution());
-    var url = wmsquerylayer.getGetFeatureInfoUrl(
-        evt.coordinate, viewResolution, 'EPSG:3857',
-        {'INFO_FORMAT': 'application/json'});
+// clear selection when drawing a new box and when clicking on the map
+// dragBox.on('boxstart', function() {
+//     selectedFeatures.clear();
+// });
+function setEnableSelectByBox() {
+    removeInteractions();
+    _map.addInteraction(dragBox);
+}
 
+
+function removeInteractions() {
+    //remove select interaction
+    try{
+        _map.removeInteraction(selectClick);
+    }catch (e){}
+    _flag_enable_select=false;
+
+
+
+
+    //remove measure interaction and other parts
+    _map.on('pointermove', pointerMoveHandler);
+
+    _map.getViewport().addEventListener('mouseout', function() {
+        if(helpTooltipElement)
+            helpTooltipElement.classList.add('hidden');
+    });
+
+    measute_source.clear();
+    _map.getOverlays().clear();
+    _map.removeInteraction(draw);
+
+
+
+}
+
+
+
+function get_feature_onclick(url,fs) {
     if (url) {
 
-        $.ajax(url).then(function(response) {
-            selected_feature_source.clear();
+        $.ajax({
+            crossDomain:true,
+            url:url,
+        }).then(function(response) {
+            // _selected_feature_source.clear();
             var geojsonFormat = new ol.format.GeoJSON();
             var features = geojsonFormat.readFeatures(response,
                 {featureProjection: 'EPSG:3857'});
-            selected_feature_source.addFeatures(features);
+
+            // _selected_feature_source.addFeatures(features);
         });
     }
-
-    });
 }
 
-var wmsquerylayer;
+////wms query layer
 
-function setwmsquerylayer(url,workspace,layer) {
+var wmsquerylayer;
+var wmsquerylayersource;
+
+JSMapView.prototype.setwmsquerylayer  = function(url,workspace,layer) {
      wmsquerylayersource = new ol.source.TileWMS({
         url:url ,
         params: {'LAYERS':workspace+":"+layer , 'TILED': true},
         serverType: 'geoserver',
-        crossOrigin: 'anonymous'
+        // crossOrigin: 'anonymous'
     });
 
 
@@ -135,6 +191,8 @@ function setwmsquerylayer(url,workspace,layer) {
     });
 }
 
+
+//end of wms query layer
 ////start pdf
 function print(dim,resolution) {
     $('#print').disable();
@@ -524,6 +582,7 @@ var measute_source = new ol.source.Vector();
 
 var measure_vector = new ol.layer.Vector({
     source: measute_source,
+    displayInLayerSwitcher:false,
     style: new ol.style.Style({
         fill: new ol.style.Fill({
             color: 'rgba(255, 255, 255, 0.2)'
@@ -547,7 +606,6 @@ _map.addLayer(measure_vector)
  * @type {ol.Feature}
  */
 var sketch;
-
 
 /**
  * The help tooltip element.
@@ -611,7 +669,6 @@ var pointerMoveHandler = function(evt) {
             helpMsg = continueLineMsg;
         }
     }
-
 
     helpTooltipElement.innerHTML = helpMsg;
     helpTooltip.setPosition(evt.coordinate);
@@ -728,10 +785,6 @@ function addMeasureInteraction(type) {
 }
 
 
-
-
-
-
 /**
  * Creates a new help tooltip
  */
@@ -773,23 +826,10 @@ function createMeasureTooltip() {
  */
 
 function measure (type) {
-    clearmesure();
+    removeInteractions();
     addMeasureInteraction(type);
 };
-function clearmesure() {
-    _map.on('pointermove', pointerMoveHandler);
 
-    _map.getViewport().addEventListener('mouseout', function() {
-        if(helpTooltipElement)
-            helpTooltipElement.classList.add('hidden');
-    });
-
-
-
-    measute_source.clear();
-    _map.getOverlays().clear();
-    _map.removeInteraction(draw);
-}
 
 ///endof mesure
 
@@ -807,6 +847,7 @@ function clearVectorLayerFeatures(vectorLayer) {
         vectorLayer.getSource().removeFeature(features[i]);
 
     }
+    vectorLayer.getSource().changed();
 }
 
 
@@ -814,8 +855,8 @@ function zoomToVectorLayer(vectorLayer,duration) {
     if(!vectorLayer)
         return;
 
-    if(!duration)
-        duration=2500;
+    if(duration>1)
+        duration=1000;
     try {
         _map.getView().fit(vectorLayer.getSource().getExtent(), {duration: duration});
     }catch (e){
@@ -918,7 +959,9 @@ var _layers_bbox=[];
 function isInArray(value, array) {
     return array.indexOf(value) > -1;
 }
-function getlayersbbox(gaswmslayer, url,layer) {
+
+
+function setlayersbbox(gaswmslayer,layer) {
     var extent;
     for (var i=0, len = _layers_bbox.length; i<len; i++) {
         var layerobj = _layers_bbox[i];
@@ -928,39 +971,28 @@ function getlayersbbox(gaswmslayer, url,layer) {
         }
     }
 
-    if(extent){
-        gaswmslayer.set("bbox_",extent)
+    if(extent) {
+        gaswmslayer.set("bbox_", extent)
+        return true;
     }else{
+        return false;
+    }
+}
 
+
+function getlayersbbox(gaswmslayer, url,layer) {
+
+    if(!setlayersbbox(gaswmslayer,layer)){
             var url = url+'?request=GetCapabilities&service=WMS&version=1.1.1';
-            var parser = new ol.format.WMSCapabilities();
             // console.log("layer extent url is " + url);
             var jqxhr = $.ajax( {
                 crossDomain:true,
                 url:url,
             } )
                 .done(function(response ) {
-                    var result = parser.read(response);
-                    var Layers = result.Capability.Layer.Layer;
 
-                    for (var i=0, len = Layers.length; i<len; i++) {
-                        var layerobj = Layers[i];
-                        var layer_ = {name:layerobj.Name, extent:layerobj.BoundingBox[0].extent};
-                       if(!isInArray(layer_,_layers_bbox)){
-                           _layers_bbox.push(layer_);
-                       }
-
-                        if (layerobj.Name == layer) {
-                            extent = layerobj.BoundingBox[0].extent;
-                            break;
-                        }
-                    }
-                    if(!extent){
-                        console.log("could not find respurce " );
-                        return;
-                    }
-
-                    gaswmslayer.set("bbox_",extent)
+                    loadcapabilities(response);
+                    setlayersbbox(gaswmslayer,layer);
                 })
                 .fail(function() {
                     console.log( "error" );
@@ -972,6 +1004,23 @@ function getlayersbbox(gaswmslayer, url,layer) {
 }
 
 
+
+function loadcapabilities(response) {
+    var parser = new ol.format.WMSCapabilities();
+    var result = parser.read(response);
+    var Layers = result.Capability.Layer.Layer;
+
+
+    for (var i=0, len = Layers.length; i<len; i++) {
+        var layerobj = Layers[i];
+        var layer_ = {name:layerobj.Name, extent:layerobj.BoundingBox[0].extent};
+        if(!isInArray(layer_,_layers_bbox)){
+            _layers_bbox.push(layer_);
+        }
+    }
+
+}
+
 /////JSMAPVIEW wrapper functions
 JSMapView.prototype.setDisableGlobe=function () {
     DisableGlobe();
@@ -981,8 +1030,6 @@ JSMapView.prototype.setEnableGlobe=function () {
     DisableGlobe();
     _map.addControl(ov);
 }
-
-
 
 
 JSMapView.prototype.addlayer=function (type,url,workspace,layer,minres,title,noSwitcherDelete,allwaysOnTop) {
@@ -1046,6 +1093,21 @@ JSMapView.prototype.setBackgrounMap = function (type) {
 
 JSMapView.prototype.setBackgroundMapBaseURL = function (baseurl) {
     background_base_url=baseurl;
+
+   var source_road= new ol.source.XYZ({
+        url: background_base_url+'/geosuite/api/mbtile/road/{z}/{x}/{y}'
+    });
+    var source_sattlite= new ol.source.XYZ({
+        url: background_base_url+'/geosuite/api/mbtile/sattlite/{z}/{x}/{y}'
+    });
+    back_sattlite.setSource(source_sattlite);
+    back_road.setSource(source_road);
+
+    _map.addLayer(back_sattlite);
+    _map.addLayer(back_road);
+
+    return;
+
     back_road=    new ol.layer.Tile({
         title: "آفلاین معابر",
         baseLayer: true,
@@ -1063,13 +1125,15 @@ JSMapView.prototype.setBackgroundMapBaseURL = function (baseurl) {
         baseLayer: true,
         displayInLayerSwitcherImage:true,
         displayInLayerSwitcher:false,
-
         logo:background_base_url+'geosuite/api/mbtile/sattlite/0/0/0',
 
         source: new ol.source.XYZ({
             url: background_base_url+'/geosuite/api/mbtile/sattlite/{z}/{x}/{y}'
         })
     });
+
+    back_sattlite.setZIndex(10);
+    back_road.setZIndex(11);
 
     ov = new ol.control.Globe(
         {	layers: [back_road,back_sattlite],
@@ -1082,6 +1146,7 @@ JSMapView.prototype.setBackgroundMapBaseURL = function (baseurl) {
         _map.removeLayer(back_sattlite);
 
     }catch (e){}
+
     try {
     _map.removeLayer(back_road);
     }catch (e){}
@@ -1142,33 +1207,33 @@ JSMapView.prototype.addTestwms = function () {
 //     // }));
 // //, 'TILED': true
 //     getlayersbbox(gaswmslayer,"http://127.0.0.1:8080/geoserver/gas/wms","GasNet_parcel");
-
-
-    var layerWFS = new ol.layer.Vector({
-        source: new ol.source.Vector({
-            loader: function (extent) {
-                $.ajax('http://127.0.0.1:8080/geoserver/gas/wfs', {
-                    type: 'GET',
-                    data: {
-                        service: 'WFS',
-                        version: '1.1.0',
-                        request: 'GetFeature',
-                        typename: 'GasNet_parcel',
-                        srsname: 'EPSG:3857',
-                        outputFormat: 'application/json',
-                        bbox: extent.join(',') + ',EPSG:3857'
-                    }
-                }).done(function (response) {
-                    layerWFS
-                        .getSource()
-                        .addFeatures(new ol.format.GeoJSON()
-                            .readFeatures(response));
-                });
-            },
-            strategy: ol.loadingstrategy.bbox,
-            projection: 'EPSG:3857'
-        })
-    });
+//
+//
+//     var layerWFS = new ol.layer.Vector({
+//         source: new ol.source.Vector({
+//             loader: function (extent) {
+//                 $.ajax('http://127.0.0.1:8080/geoserver/gas/wfs', {
+//                     type: 'GET',
+//                     data: {
+//                         service: 'WFS',
+//                         version: '1.1.0',
+//                         request: 'GetFeature',
+//                         typename: 'GasNet_parcel',
+//                         srsname: 'EPSG:3857',
+//                         outputFormat: 'application/json',
+//                         bbox: extent.join(',') + ',EPSG:3857'
+//                     }
+//                 }).done(function (response) {
+//                     layerWFS
+//                         .getSource()
+//                         .addFeatures(new ol.format.GeoJSON()
+//                             .readFeatures(response));
+//                 });
+//             },
+//             strategy: ol.loadingstrategy.bbox,
+//             projection: 'EPSG:3857'
+//         })
+//     });
 
    // _map.addLayer(layerWFS);
     // var layerWFS = new ol.layer.Vector({
@@ -1201,7 +1266,7 @@ JSMapView.prototype.addTestwms = function () {
     //         .addFeatures(new ol.format.GeoJSON().readFeatures(response));
     // };
 
-    set_editlayer('gas:GasNet_parcel','http://127.0.0.1:8080',1);
+    // set_editlayer('gas:GasNet_parcel','http://127.0.0.1:8080',1);
 };
 
 var formatGML = new ol.format.GML({
@@ -1213,13 +1278,23 @@ var formatGML = new ol.format.GML({
 
 var sourceWFS;
 var layerWFS;
-function set_editlayer(featureNS,url,maxres,title) {
 
-    alert("set editlayer")
+
+JSMapView.prototype.remove_edit_layer =function () {
+    try{
+        _map.removeLayer(layerWFS);
+    }catch (e){}
+}
+
+
+JSMapView.prototype.set_editlayer = function (featureNS,url,maxres,title) {
+
+    alert("set editlayer");
     formatGML.featureType=featureNS;//'gas:GasNet_riser';
     sourceWFS = new ol.source.Vector({
         format: new ol.format.GeoJSON(),
         url: function(extent) {
+
             return url+'/geoserver/ows?service=WFS&version=1.0.0&request=GetFeature&' +
                 'typeName='+featureNS+'&outputFormat=application/json' +
                 '&bbox=' + extent.join(',') + ',EPSG:3857';
@@ -1228,6 +1303,24 @@ function set_editlayer(featureNS,url,maxres,title) {
         serverType: 'geoserver',
         crossOrigin: 'anonymous'
     });
+
+    var listenerKey = sourceWFS.on('change', function(e) {
+        if (sourceWFS.getState() == 'ready') {
+
+            if(enable_grid_snap)
+                return;
+
+            try{
+                _map.removeInteraction(snap);
+            }catch (e){}
+
+            snap = new ol.interaction.Snap({
+                source: sourceWFS
+            });
+            _map.addInteraction(snap);
+        }
+    });
+
     layerWFS = new ol.layer.Vector({
         source: sourceWFS,
         maxResolution:maxres,
@@ -1241,16 +1334,444 @@ function set_editlayer(featureNS,url,maxres,title) {
 
     layerWFS.set("type_",'wfs');
     _map.addLayer(layerWFS);
-    var interactionSnap = new ol.interaction.Snap({
-        source: layerWFS.getSource()
-    });
-    _map.addInteraction(interactionSnap);
+    // var interactionSnap = new ol.interaction.Snap({
+    //     source: layerWFS.getSource()
+    // });
+    // _map.addInteraction(interactionSnap);
 
     getlayersbbox(layerWFS,"http://127.0.0.1:8080/geoserver/gas/wms","GasNet_parcel");
+    enableEditorBar(layerWFS,'Area');
+};
+
+
+/**
+ * user must provide the rsult of this query as input
+ * url = 'http://127.0.0.1:8080/geoserver/gas/wms?request=GetCapabilities&service=WMS&version=1.1.1';
+ * @param respond
+ */
+JSMapView.prototype.loadcapabilities = function (respond) {
+ loadcapabilities(respond);
+};
+/**
+ *
+ * @param value
+ * top
+ * top-left
+ * left
+ *  bottom-left
+ *  bottom
+ *  bottom-right
+ *  right
+ *  top-right
+ */
+JSMapView.prototype.setMainbarPosition = function (value) {
+
+    switch (value){
+        case 'top':
+        case 'top-left':
+        case 'left':
+        case 'bottom-left':
+        case 'bottom':
+        case 'bottom-right':
+        case 'right':
+        case 'top-right':
+            setMainbarPosition(value);
+        default:
+            setMainbarPosition(_mainbarPosition);
+    }
+};
+
+///start of edittor toolbar
+
+/**
+ *
+ * @param value
+ * top
+ * top-left
+ * left
+ *  bottom-left
+ *  bottom
+ *  bottom-right
+ *  right
+ *  top-right
+ */
+_mainbarPosition='top-left';
+function setMainbarPosition(value) {
+    mainbar.setPosition(value);
+    _mainbarPosition=value;
 }
 
-function remove_edit_layer() {
+var mainbar = new ol.control.Bar();
+var snapi = new ol.interaction.SnapGuides();
+var snap ;
+enable_grid_snap=false;
+function enablesnapping(vector) {
+    if(enable_grid_snap)
+        return;
+    //adding snap function
+// The snap interaction must be added after the Modify and Draw interactions
+    // in order for its map browser event handlers to be fired first. Its handlers
+    // are responsible of doing the snapping.
     try{
-        _map.removeLayer(layerWFS);
+        _map.removeInteraction(snap);
     }catch (e){}
+
+    snap = new ol.interaction.Snap({
+        source: vector.getSource()
+    });
+    _map.addInteraction(snap);
 }
+
+function enableEditorBar(vector,featuretype) {
+
+
+
+    try{
+        _map.removeControl(mainbar);
+    }catch (e){}
+    mainbar = new ol.control.Bar();
+    mainbar.setPosition(_mainbarPosition);
+    _map.addControl(mainbar);
+
+// Edit control bar
+    var editbar = new ol.control.Bar(
+        {	toggleOne: true,	// one control active at the same time
+            group:false			// group controls together
+        });
+    mainbar.addControl(editbar);
+
+// Add selection tool:
+//  1- a toggle control with a select interaction
+//  2- an option bar to delete / get information on the selected feature
+
+    var deletefeaturebtn=new ol.control.Button(
+        {	html: '<i class="fa fa-minus-circle"></i>',
+            title: "حذف عارضه",
+            handleClick: function()
+            {
+                editorRemoveInteraction();
+                interaction = new ol.interaction.Select();
+                interaction.getFeatures().on('add', function (e) {
+                    transactWFS('delete', e.target.item(0));
+                    interactionSelectPointerMove.getFeatures().clear();
+                    interaction.getFeatures().clear();
+                });
+                _map.addInteraction(interaction);
+
+
+                enableSnapping(vector)
+
+                // var features = selectCtrl.getInteraction().getFeatures();
+                // if (!features.getLength()) info("Select an object first...");
+                // else alert(features.getLength()+" object(s) deleted.");
+                // for (var i=0, f; f=features.item(i); i++)
+                // {
+                //     layerWFS.getSource().removeFeature(f);
+                // }
+                // selectCtrl.getInteraction().getFeatures().clear();
+            }
+        });
+
+    var modifyfeaturebtn=new ol.control.Button(
+        {	html: '<i class="fa fa-edit"></i>',
+            title: "ویرایش عارضه",
+            handleClick: function()
+            {
+                editorRemoveInteraction();
+
+
+                _map.addInteraction(interactionSelect);
+                interaction = new ol.interaction.Modify({
+                    features: interactionSelect.getFeatures()
+                });
+                _map.addInteraction(interaction);
+               // {#map.addInteraction(interactionSnap);#}
+                dirty = {};
+                interactionSelect.getFeatures().on('add', function (e) {
+                    e.element.on('change', function (e) {
+                        dirty[e.target.getId()] = true;
+                    });
+                });
+                interactionSelect.getFeatures().on('remove', function (e) {
+                    var f = e.element;
+                    if (dirty[f.getId()]) {
+                        delete dirty[f.getId()];
+                        var featureProperties = f.getProperties();
+                        delete featureProperties.boundedBy;
+                        var clone = new ol.Feature(featureProperties);
+                        clone.setId(f.getId());
+                        transactWFS('update', clone);
+                    }
+                });
+                enableSnapping(vector)
+
+                // var features = selectCtrl.getInteraction().getFeatures();
+                // if (!features.getLength()) info("Select an object first...");
+                // else alert(features.getLength()+" object(s) deleted.");
+                // for (var i=0, f; f=features.item(i); i++)
+                // {
+                //     layerWFS.getSource().removeFeature(f);
+                // }
+                // selectCtrl.getInteraction().getFeatures().clear();
+            }
+        });
+
+    var addfeaturebtn=new ol.control.Button(
+        {	html: '<i class="fa fa-plus-circle"></i>',
+            title: "افزودن عارضه",
+            handleClick: function()
+            {
+                editorRemoveInteraction();
+
+                if(!featuretype)
+                    return;
+
+                switch (featuretype){
+                    case 'Point':
+                        interaction = new ol.interaction.Draw({
+                            type: 'Point',
+                            source: vector.getSource()
+                        });
+                        //adding snap to grid interaction
+                        snapi.setDrawInteraction(interaction);
+                        _map.addInteraction(snapi);
+                        interaction.on('drawend', function (e) {
+                            // create a unique id
+                            // it is later needed to delete features
+                            // give the feature this id
+                            var feature = e.feature;
+                            feature.set('geom', feature.getGeometry());
+
+                            transactWFS('insert', feature);
+                        });
+                        _map.addInteraction(interaction);
+                        // enableSnapping(vector)
+                        break;
+
+                    case 'Line':
+                        interaction = new ol.interaction.Draw({
+                            type: 'LineString',
+                            source: vector.getSource()
+                        });
+                        //adding snap to grid interaction
+                        snapi.setDrawInteraction(interaction);
+                        _map.addInteraction(snapi);
+                        _map.addInteraction(interaction);
+                        interaction.on('drawend', function (e) {
+                            transactWFS('insert', e.feature);
+                        });
+                        // enableSnapping(vector)
+                        break;
+
+                    case 'Area':
+                        interaction = new ol.interaction.Draw({
+                            type: 'Polygon',
+                            source: vector.getSource()
+                        });
+
+                        //adding snap to grid interaction
+                        if(enable_grid_snap){
+                            snapi.setDrawInteraction(interaction);
+                            _map.addInteraction(snapi);
+                        }
+
+                        interaction.on('drawend', function (e) {
+                            transactWFS('insert', e.feature);
+                        });
+                        _map.addInteraction(interaction);
+                        // enableSnapping(vector)
+                        break;
+                    default:
+                        break;
+
+                }
+                enableSnapping(vector)
+
+            }
+        });
+
+    editbar.addControl(deletefeaturebtn);
+    editbar.addControl(modifyfeaturebtn);
+    editbar.addControl(addfeaturebtn);
+
+
+
+
+    var sbar = new ol.control.Bar();
+
+    sbar.addControl (new ol.control.Button(
+        {	html: '<i class="fa fa-info"></i>',
+            title: "Show informations",
+            handleClick: function()
+            {	switch (selectCtrl.getInteraction().getFeatures().getLength())
+            {	case 0: alert("Select an object first...");
+                    break;
+                case 1:
+                    var f = selectCtrl.getInteraction().getFeatures().item(0);
+                    alert("Selection is a "+f.getGeometry().getType());
+                    break;
+                default:
+                    alert(selectCtrl.getInteraction().getFeatures().getLength()+ " objects seleted.");
+                    break;
+            }
+            }
+        }));
+
+    var selectCtrl = new ol.control.Toggle(
+        {	html: '<i class="fa fa-hand-pointer"></i>',
+            title: "Enable Grid Snap",
+            interaction: new ol.interaction.Select (),
+            bar: sbar,
+            autoActivate:false,
+            active:enable_grid_snap
+        });
+
+    editbar.addControl ( selectCtrl);
+
+// Add editing tools
+
+
+    var pedit = new ol.control.Toggle(
+        {	html: '<i class="fa fa-map-marker" ></i>',
+            title: 'Point',
+            interaction: new ol.interaction.Draw
+            ({	type: 'Point',
+                source: vector.getSource()
+            })
+        });
+    editbar.addControl ( pedit );
+
+    var ledit = new ol.control.Toggle(
+        {	html: '<i class="fa fa-share-alt" ></i>',
+            title: 'LineString',
+            interaction: new ol.interaction.Draw
+            ({	type: 'LineString',
+                source: vector.getSource(),
+                // Count inserted points
+                geometryFunction: function(coordinates, geometry)
+                {   if (geometry) geometry.setCoordinates(coordinates);
+                else geometry = new ol.geom.LineString(coordinates);
+                    this.nbpts = geometry.getCoordinates().length;
+                    return geometry;
+                }
+            }),
+            // Options bar associated with the control
+            bar: new ol.control.Bar(
+                {	controls:[ new ol.control.TextButton(
+                        {	html: 'undo',
+                            title: "Delete last point",
+                            handleClick: function()
+                            {	if (ledit.getInteraction().nbpts>1) ledit.getInteraction().removeLastPoint();
+                            }
+                        }),
+                        new ol.control.TextButton(
+                            {	html: 'Finish',
+                                title: "finish",
+                                handleClick: function()
+                                {	// Prevent null objects on finishDrawing
+                                    if (ledit.getInteraction().nbpts>2) ledit.getInteraction().finishDrawing();
+                                }
+                            })
+                    ]
+                })
+        });
+
+    editbar.addControl ( ledit );
+
+    var fedit = new ol.control.Toggle(
+        {	html: '<i class="fa fa-bookmark-o fa-rotate-270" ></i>',
+            title: 'Polygon',
+            interaction: new ol.interaction.Draw
+            ({	type: 'Polygon',
+                source: vector.getSource(),
+                // Count inserted points
+                geometryFunction: function(coordinates, geometry)
+                {   this.nbpts = coordinates[0].length;
+                    if (geometry) geometry.setCoordinates([coordinates[0].concat([coordinates[0][0]])]);
+                    else geometry = new ol.geom.Polygon(coordinates);
+                    return geometry;
+                }
+            }),
+            // Options bar ssociated with the control
+            bar: new ol.control.Bar(
+                {	controls:[ new ol.control.TextButton(
+                        {	html: 'undo',//'<i class="fa fa-mail-reply"></i>',
+                            title: "undo last point",
+                            handleClick: function()
+                            {	if (fedit.getInteraction().nbpts>1) fedit.getInteraction().removeLastPoint();
+                            }
+                        }),
+                        new ol.control.TextButton(
+                            {	html: 'finish',
+                                title: "finish",
+                                handleClick: function()
+                                {	// Prevent null objects on finishDrawing
+                                    if (fedit.getInteraction().nbpts>3) fedit.getInteraction().finishDrawing();
+                                }
+                            })
+                    ]
+                })
+        });
+    editbar.addControl ( fedit );
+
+// Add a simple push button to save features
+    var save = new ol.control.Button(
+        {	html: '<i class="fa fa-download"></i>',
+            title: "Save",
+            handleClick: function(e)
+            {	var json= new ol.format.GeoJSON().writeFeatures(vector.getSource().getFeatures());
+                alert(json);
+            }
+        });
+    mainbar.addControl ( save );
+}
+// Main control bar
+
+
+
+
+var interaction;
+
+var interactionSelectPointerMove = new ol.interaction.Select({
+    condition: ol.events.condition.pointerMove
+});
+
+var interactionSelect = new ol.interaction.Select({
+    style: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: '#FF2828'
+        })
+    })
+});
+
+function editorRemoveInteraction() {
+    removeInteractions();
+    _map.removeInteraction(interaction);
+    interactionSelect.getFeatures().clear();
+    _map.removeInteraction(interactionSelect);
+    _map.removeInteraction(snapi);
+    _map.removeInteraction(snap);
+}
+
+var transactWFS = function (mode, f) {
+    var node;
+    var fs=[];
+    fs.push(f);
+    var obj = _geojson_format.writeFeatures(fs);
+    var geojson=JSON.stringify(obj);
+    switch (mode) {
+        case 'insert':
+            this.javaConnector.insertFeature(geojson);
+            break;
+        case 'update':
+            this.javaConnector.updateFeature(geojson);
+            break;
+        case 'delete':
+            //Ask for delete confirmations
+            this.javaConnector.deleteFeature(geojson);
+            break;
+    }
+};
+
+
+

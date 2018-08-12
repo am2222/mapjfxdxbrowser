@@ -1501,6 +1501,10 @@ public class MapView extends Region {
             fireEvent(new MapViewEvent(MapViewEvent.MAP_BOUNDING_EXTENT, extent));
         }
 
+        public void singleClickAtFeature(String url) {
+            logger.finer(() -> "JS reports singleClickAtFeature url: " + url);
+            fireEvent(new MapViewEvent(MapViewEvent.MAP_SINGLE_CLICK_AT_FEATURE, url));
+        }
 
     }
 }

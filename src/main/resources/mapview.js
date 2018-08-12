@@ -93,10 +93,28 @@ JSMapView.prototype.init = function () {
         this.javaConnector.pointerMovedTo(coordinate[1], coordinate[0]);
     }, this);
 
+    // _map.on('singleclick', function (evt) {
+    //     var coordinate = cToWGS84(evt.coordinate);
+    //     // lat/lon reversion
+    //     this.javaConnector.singleClickAt(coordinate[1], coordinate[0]);
+    // }, this);
     _map.on('singleclick', function (evt) {
-        var coordinate = cToWGS84(evt.coordinate);
-        // lat/lon reversion
-        this.javaConnector.singleClickAt(coordinate[1], coordinate[0]);
+
+        if(_flag_enable_select){
+
+
+            if(!wmsquerylayersource)
+                return;
+
+            var viewResolution = /** @type {number} */ (_view.getResolution());
+            var url = wmsquerylayersource.getGetFeatureInfoUrl(
+                evt.coordinate, viewResolution, 'EPSG:3857',
+                {'INFO_FORMAT': 'application/json'});
+
+            this.javaConnector.singleClickAtFeature(url);
+
+        }
+
     }, this);
 
     _map.on('postrender',

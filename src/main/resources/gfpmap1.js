@@ -91,7 +91,6 @@ selectClick.on('select', function(e) {
     var obj = _geojson_format.writeFeatures(fs);
     var geojson=JSON.stringify(obj);
     console.log(geojson);
-
     this.javaConnector.singleClickAtVectorFeature(geojson);
     //perform wms select
     // if(!wmsquerylayersource)
@@ -104,18 +103,14 @@ selectClick.on('select', function(e) {
     //
     // get_feature_onclick(url,fs);
 
+
 });
 var _flag_enable_select=false;
 function setEnableSelect() {
     _map.addInteraction(selectClick);
     _flag_enable_select=true;
 }
-function setDisableSelect() {
-    try{
-        _map.removeInteraction(selectClick);
-    }catch (e){}
-    _flag_enable_select=false;
-}
+
 
 
 
@@ -194,7 +189,6 @@ JSMapView.prototype.setwmsquerylayer  = function(url,workspace,layer) {
         noSwitcherDelete:true,
         allwaysOnTop:false,
     });
-
 }
 
 
@@ -853,7 +847,6 @@ function clearVectorLayerFeatures(vectorLayer) {
         vectorLayer.getSource().removeFeature(features[i]);
 
     }
-    vectorLayer.getSource().changed();
 }
 
 
@@ -861,8 +854,8 @@ function zoomToVectorLayer(vectorLayer,duration) {
     if(!vectorLayer)
         return;
 
-    if(duration>1)
-        duration=1000;
+    if(!duration)
+        duration=2500;
     try {
         _map.getView().fit(vectorLayer.getSource().getExtent(), {duration: duration});
     }catch (e){
@@ -966,8 +959,7 @@ function isInArray(value, array) {
     return array.indexOf(value) > -1;
 }
 
-
-function setlayersbbox(gaswmslayer,layer) {
+function getlayersbbox(gaswmslayer, url,layer) {
     var extent;
     for (var i=0, len = _layers_bbox.length; i<len; i++) {
         var layerobj = _layers_bbox[i];
@@ -977,28 +969,39 @@ function setlayersbbox(gaswmslayer,layer) {
         }
     }
 
-    if(extent) {
-        gaswmslayer.set("bbox_", extent)
-        return true;
+    if(extent){
+        gaswmslayer.set("bbox_",extent)
     }else{
-        return false;
-    }
-}
 
-
-function getlayersbbox(gaswmslayer, url,layer) {
-
-    if(!setlayersbbox(gaswmslayer,layer)){
             var url = url+'?request=GetCapabilities&service=WMS&version=1.1.1';
+            var parser = new ol.format.WMSCapabilities();
             // console.log("layer extent url is " + url);
             var jqxhr = $.ajax( {
                 crossDomain:true,
                 url:url,
             } )
                 .done(function(response ) {
+                    var result = parser.read(response);
+                    var Layers = result.Capability.Layer.Layer;
 
-                    loadcapabilities(response);
-                    setlayersbbox(gaswmslayer,layer);
+                    for (var i=0, len = Layers.length; i<len; i++) {
+                        var layerobj = Layers[i];
+                        var layer_ = {name:layerobj.Name, extent:layerobj.BoundingBox[0].extent};
+                       if(!isInArray(layer_,_layers_bbox)){
+                           _layers_bbox.push(layer_);
+                       }
+
+                        if (layerobj.Name == layer) {
+                            extent = layerobj.BoundingBox[0].extent;
+                            break;
+                        }
+                    }
+                    if(!extent){
+                        console.log("could not find respurce " );
+                        return;
+                    }
+
+                    gaswmslayer.set("bbox_",extent)
                 })
                 .fail(function() {
                     console.log( "error" );
@@ -1010,23 +1013,6 @@ function getlayersbbox(gaswmslayer, url,layer) {
 }
 
 
-
-function loadcapabilities(response) {
-    var parser = new ol.format.WMSCapabilities();
-    var result = parser.read(response);
-    var Layers = result.Capability.Layer.Layer;
-
-
-    for (var i=0, len = Layers.length; i<len; i++) {
-        var layerobj = Layers[i];
-        var layer_ = {name:layerobj.Name, extent:layerobj.BoundingBox[0].extent};
-        if(!isInArray(layer_,_layers_bbox)){
-            _layers_bbox.push(layer_);
-        }
-    }
-
-}
-
 /////JSMAPVIEW wrapper functions
 JSMapView.prototype.setDisableGlobe=function () {
     DisableGlobe();
@@ -1036,6 +1022,8 @@ JSMapView.prototype.setEnableGlobe=function () {
     DisableGlobe();
     _map.addControl(ov);
 }
+
+
 
 
 JSMapView.prototype.addlayer=function (type,url,workspace,layer,minres,title,noSwitcherDelete,allwaysOnTop) {
@@ -1099,21 +1087,6 @@ JSMapView.prototype.setBackgrounMap = function (type) {
 
 JSMapView.prototype.setBackgroundMapBaseURL = function (baseurl) {
     background_base_url=baseurl;
-
-   var source_road= new ol.source.XYZ({
-        url: background_base_url+'/geosuite/api/mbtile/road/{z}/{x}/{y}'
-    });
-    var source_sattlite= new ol.source.XYZ({
-        url: background_base_url+'/geosuite/api/mbtile/sattlite/{z}/{x}/{y}'
-    });
-    back_sattlite.setSource(source_sattlite);
-    back_road.setSource(source_road);
-
-    _map.addLayer(back_sattlite);
-    _map.addLayer(back_road);
-
-    return;
-
     back_road=    new ol.layer.Tile({
         title: "آفلاین معابر",
         baseLayer: true,
@@ -1131,15 +1104,13 @@ JSMapView.prototype.setBackgroundMapBaseURL = function (baseurl) {
         baseLayer: true,
         displayInLayerSwitcherImage:true,
         displayInLayerSwitcher:false,
+
         logo:background_base_url+'geosuite/api/mbtile/sattlite/0/0/0',
 
         source: new ol.source.XYZ({
             url: background_base_url+'/geosuite/api/mbtile/sattlite/{z}/{x}/{y}'
         })
     });
-
-    back_sattlite.setZIndex(10);
-    back_road.setZIndex(11);
 
     ov = new ol.control.Globe(
         {	layers: [back_road,back_sattlite],
@@ -1152,7 +1123,6 @@ JSMapView.prototype.setBackgroundMapBaseURL = function (baseurl) {
         _map.removeLayer(back_sattlite);
 
     }catch (e){}
-
     try {
     _map.removeLayer(back_road);
     }catch (e){}
@@ -1175,12 +1145,6 @@ JSMapView.prototype.addFeaturesToVector = function (data,cleanall,type,reproject
 JSMapView.prototype.setEnableSelect = function () {
    setEnableSelect();
 };
-
-
-JSMapView.prototype.setDisableSelect = function () {
-    setDisableSelect();
-};
-
 JSMapView.prototype.setWmsQueryLayer = function (url,workspace,layer) {
     setwmsquerylayer(url,workspace,layer)
 };
@@ -1306,7 +1270,6 @@ JSMapView.prototype.set_editlayer = function (featureNS,url,maxres,title) {
     sourceWFS = new ol.source.Vector({
         format: new ol.format.GeoJSON(),
         url: function(extent) {
-
             return url+'/geoserver/ows?service=WFS&version=1.0.0&request=GetFeature&' +
                 'typeName='+featureNS+'&outputFormat=application/json' +
                 '&bbox=' + extent.join(',') + ',EPSG:3857';
@@ -1315,24 +1278,6 @@ JSMapView.prototype.set_editlayer = function (featureNS,url,maxres,title) {
         serverType: 'geoserver',
         crossOrigin: 'anonymous'
     });
-
-    var listenerKey = sourceWFS.on('change', function(e) {
-        if (sourceWFS.getState() == 'ready') {
-
-            if(enable_grid_snap)
-                return;
-
-            try{
-                _map.removeInteraction(snap);
-            }catch (e){}
-
-            snap = new ol.interaction.Snap({
-                source: sourceWFS
-            });
-            _map.addInteraction(snap);
-        }
-    });
-
     layerWFS = new ol.layer.Vector({
         source: sourceWFS,
         maxResolution:maxres,
@@ -1346,52 +1291,18 @@ JSMapView.prototype.set_editlayer = function (featureNS,url,maxres,title) {
 
     layerWFS.set("type_",'wfs');
     _map.addLayer(layerWFS);
-    // var interactionSnap = new ol.interaction.Snap({
-    //     source: layerWFS.getSource()
-    // });
-    // _map.addInteraction(interactionSnap);
+    var interactionSnap = new ol.interaction.Snap({
+        source: layerWFS.getSource()
+    });
+    _map.addInteraction(interactionSnap);
 
     getlayersbbox(layerWFS,"http://127.0.0.1:8080/geoserver/gas/wms","GasNet_parcel");
-    enableEditorBar(layerWFS,'Area');
+    enableEditorBar(layerWFS);
+
 };
 
 
-/**
- * user must provide the rsult of this query as input
- * url = 'http://127.0.0.1:8080/geoserver/gas/wms?request=GetCapabilities&service=WMS&version=1.1.1';
- * @param respond
- */
-JSMapView.prototype.loadcapabilities = function (respond) {
- loadcapabilities(respond);
-};
-/**
- *
- * @param value
- * top
- * top-left
- * left
- *  bottom-left
- *  bottom
- *  bottom-right
- *  right
- *  top-right
- */
-JSMapView.prototype.setMainbarPosition = function (value) {
 
-    switch (value){
-        case 'top':
-        case 'top-left':
-        case 'left':
-        case 'bottom-left':
-        case 'bottom':
-        case 'bottom-right':
-        case 'right':
-        case 'top-right':
-            setMainbarPosition(value);
-        default:
-            setMainbarPosition(_mainbarPosition);
-    }
-};
 
 ///start of edittor toolbar
 
@@ -1407,40 +1318,19 @@ JSMapView.prototype.setMainbarPosition = function (value) {
  *  right
  *  top-right
  */
-_mainbarPosition='top-left';
+_mainbarPosition='left';
 function setMainbarPosition(value) {
     mainbar.setPosition(value);
     _mainbarPosition=value;
 }
 
 var mainbar = new ol.control.Bar();
-var snapi = new ol.interaction.SnapGuides();
-var snap ;
-enable_grid_snap=false;
-function enablesnapping(vector) {
-    if(enable_grid_snap)
-        return;
-    //adding snap function
-// The snap interaction must be added after the Modify and Draw interactions
-    // in order for its map browser event handlers to be fired first. Its handlers
-    // are responsible of doing the snapping.
-    try{
-        _map.removeInteraction(snap);
-    }catch (e){}
-
-    snap = new ol.interaction.Snap({
-        source: vector.getSource()
-    });
-    _map.addInteraction(snap);
-}
-
-function enableEditorBar(vector,featuretype) {
-
-
+function enableEditorBar(vector) {
 
     try{
         _map.removeControl(mainbar);
     }catch (e){}
+
     mainbar = new ol.control.Bar();
     mainbar.setPosition(_mainbarPosition);
     _map.addControl(mainbar);
@@ -1455,10 +1345,10 @@ function enableEditorBar(vector,featuretype) {
 // Add selection tool:
 //  1- a toggle control with a select interaction
 //  2- an option bar to delete / get information on the selected feature
-
-    var deletefeaturebtn=new ol.control.Button(
-        {	html: '<i class="fa fa-minus-circle"></i>',
-            title: "حذف عارضه",
+    var sbar = new ol.control.Bar();
+    sbar.addControl (new ol.control.Button(
+        {	html: '<i class="fa fa-times"></i>',
+            title: "Delete",
             handleClick: function()
             {
                 editorRemoveInteraction();
@@ -1471,8 +1361,6 @@ function enableEditorBar(vector,featuretype) {
                 _map.addInteraction(interaction);
 
 
-                enableSnapping(vector)
-
                 // var features = selectCtrl.getInteraction().getFeatures();
                 // if (!features.getLength()) info("Select an object first...");
                 // else alert(features.getLength()+" object(s) deleted.");
@@ -1482,135 +1370,7 @@ function enableEditorBar(vector,featuretype) {
                 // }
                 // selectCtrl.getInteraction().getFeatures().clear();
             }
-        });
-
-    var modifyfeaturebtn=new ol.control.Button(
-        {	html: '<i class="fa fa-edit"></i>',
-            title: "ویرایش عارضه",
-            handleClick: function()
-            {
-                editorRemoveInteraction();
-
-
-                _map.addInteraction(interactionSelect);
-                interaction = new ol.interaction.Modify({
-                    features: interactionSelect.getFeatures()
-                });
-                _map.addInteraction(interaction);
-               // {#map.addInteraction(interactionSnap);#}
-                dirty = {};
-                interactionSelect.getFeatures().on('add', function (e) {
-                    e.element.on('change', function (e) {
-                        dirty[e.target.getId()] = true;
-                    });
-                });
-                interactionSelect.getFeatures().on('remove', function (e) {
-                    var f = e.element;
-                    if (dirty[f.getId()]) {
-                        delete dirty[f.getId()];
-                        var featureProperties = f.getProperties();
-                        delete featureProperties.boundedBy;
-                        var clone = new ol.Feature(featureProperties);
-                        clone.setId(f.getId());
-                        transactWFS('update', clone);
-                    }
-                });
-                enableSnapping(vector)
-
-                // var features = selectCtrl.getInteraction().getFeatures();
-                // if (!features.getLength()) info("Select an object first...");
-                // else alert(features.getLength()+" object(s) deleted.");
-                // for (var i=0, f; f=features.item(i); i++)
-                // {
-                //     layerWFS.getSource().removeFeature(f);
-                // }
-                // selectCtrl.getInteraction().getFeatures().clear();
-            }
-        });
-
-    var addfeaturebtn=new ol.control.Button(
-        {	html: '<i class="fa fa-plus-circle"></i>',
-            title: "افزودن عارضه",
-            handleClick: function()
-            {
-                editorRemoveInteraction();
-
-                if(!featuretype)
-                    return;
-
-                switch (featuretype){
-                    case 'Point':
-                        interaction = new ol.interaction.Draw({
-                            type: 'Point',
-                            source: vector.getSource()
-                        });
-                        //adding snap to grid interaction
-                        snapi.setDrawInteraction(interaction);
-                        _map.addInteraction(snapi);
-                        interaction.on('drawend', function (e) {
-                            // create a unique id
-                            // it is later needed to delete features
-                            // give the feature this id
-                            var feature = e.feature;
-                            feature.set('geom', feature.getGeometry());
-
-                            transactWFS('insert', feature);
-                        });
-                        _map.addInteraction(interaction);
-                        // enableSnapping(vector)
-                        break;
-
-                    case 'Line':
-                        interaction = new ol.interaction.Draw({
-                            type: 'LineString',
-                            source: vector.getSource()
-                        });
-                        //adding snap to grid interaction
-                        snapi.setDrawInteraction(interaction);
-                        _map.addInteraction(snapi);
-                        _map.addInteraction(interaction);
-                        interaction.on('drawend', function (e) {
-                            transactWFS('insert', e.feature);
-                        });
-                        // enableSnapping(vector)
-                        break;
-
-                    case 'Area':
-                        interaction = new ol.interaction.Draw({
-                            type: 'Polygon',
-                            source: vector.getSource()
-                        });
-
-                        //adding snap to grid interaction
-                        if(enable_grid_snap){
-                            snapi.setDrawInteraction(interaction);
-                            _map.addInteraction(snapi);
-                        }
-
-                        interaction.on('drawend', function (e) {
-                            transactWFS('insert', e.feature);
-                        });
-                        _map.addInteraction(interaction);
-                        // enableSnapping(vector)
-                        break;
-                    default:
-                        break;
-
-                }
-                enableSnapping(vector)
-
-            }
-        });
-
-    editbar.addControl(deletefeaturebtn);
-    editbar.addControl(modifyfeaturebtn);
-    editbar.addControl(addfeaturebtn);
-
-
-
-
-    var sbar = new ol.control.Bar();
-
+        }));
     sbar.addControl (new ol.control.Button(
         {	html: '<i class="fa fa-info"></i>',
             title: "Show informations",
@@ -1630,12 +1390,12 @@ function enableEditorBar(vector,featuretype) {
         }));
 
     var selectCtrl = new ol.control.Toggle(
-        {	html: '<i class="fa fa-hand-pointer"></i>',
-            title: "Enable Grid Snap",
+        {	html: '<i class="fa fa-hand-pointer-o"></i>',
+            title: "Select",
             interaction: new ol.interaction.Select (),
             bar: sbar,
-            autoActivate:false,
-            active:enable_grid_snap
+            autoActivate:true,
+            active:true
         });
 
     editbar.addControl ( selectCtrl);
@@ -1761,8 +1521,6 @@ function editorRemoveInteraction() {
     _map.removeInteraction(interaction);
     interactionSelect.getFeatures().clear();
     _map.removeInteraction(interactionSelect);
-    _map.removeInteraction(snapi);
-    _map.removeInteraction(snap);
 }
 
 var transactWFS = function (mode, f) {

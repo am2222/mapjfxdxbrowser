@@ -46,11 +46,15 @@ public class MapViewEvent extends Event {
     /** vounding extent changed  in map */
     public static final EventType<MapViewEvent> MAP_BOUNDING_EXTENT = new EventType<>(ANY, "MAP_BOUNDING_EXTENT");
 
+    public static final EventType<MapViewEvent> MAP_SINGLE_CLICK_AT_FEATURE = new EventType<>(ANY, "MAP_SINGLE_CLICK_AT_FEATURE");
+
     /** the coordinate where the event happened, only set on MAP_CLICKED event */
     private final Coordinate coordinate;
 
     /** the extent that was selected in the map, only set on MAP_EXTENT and MAP_BOUNDING_EXTENT events. */
     private final Extent extent;
+
+    private final String url;
 
     /**
      * creates an CoordinateEvent of the given type and name for a clicked object.
@@ -64,6 +68,8 @@ public class MapViewEvent extends Event {
         super(eventType);
         this.coordinate = requireNonNull(coordinate);
         this.extent = null;
+        this.url=null;
+
     }
 
     /**
@@ -78,8 +84,16 @@ public class MapViewEvent extends Event {
         super(eventType);
         this.extent = requireNonNull(extent);
         this.coordinate = null;
+        this.url=null;
+
     }
 
+    public MapViewEvent(EventType<? extends MapViewEvent> eventType, String url) {
+        super(eventType);
+        this.extent = null;
+        this.coordinate = null;
+        this.url=requireNonNull(url);
+    }
     /**
      * @return the extent for a {@link #MAP_EXTENT} event.
      */
@@ -93,4 +107,9 @@ public class MapViewEvent extends Event {
     public Coordinate getCoordinate() {
         return coordinate;
     }
+
+    public String getURL() {
+        return url;
+    }
+
 }
