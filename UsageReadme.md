@@ -4,7 +4,33 @@ Refer to functions comment for more info about input parameters of each function
 
 
 #Configuration
+There are two steps to configure map. first you must get map capabilities from a url and pass it into mapview object.
+this could be done in `js` like this
 
+you have to do this in java part for instance using retrofit the `url:'http://127.0.0.1:8080/geoserver/gas/wms?request=GetCapabilities&service=WMS&version=1.1.1',`
+then you can simply call `jsMapView.loadcapabilities(response)` to decode maps capabilities. Do not forget to add layers after this step
+
+
+       //dont forget to call load capabilities
+                   var jqxhr = $.ajax( {
+                       crossDomain:true,
+                       url:'http://127.0.0.1:8080/geoserver/gas/wms?request=GetCapabilities&service=WMS&version=1.1.1',
+                   } )
+        .done(function(response ) {
+
+            jsMapView.loadcapabilities(response)
+
+
+            //adding layer 
+
+
+        })
+        .fail(function() {
+            console.log( "error" );
+        })
+        .always(function() {
+            console.log( "complete" );
+        });
 
 #Base Map Configuration
 to init basemap you should setBackgroundMapBaseURL to the server ip, read this ip from a config file

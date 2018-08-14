@@ -57,7 +57,10 @@ var _layersStamenWC = new ol.layer.Group({
  */
 var _map = new ol.Map({
     target: 'map',
-    layers: _layersOSM,
+    controls : ol.control.defaults({
+        attribution : false,
+        zoom : false,
+    }),
     view: new ol.View({
         zoom: 1
     })
@@ -101,6 +104,8 @@ JSMapView.prototype.init = function () {
     _map.on('singleclick', function (evt) {
 
         if(_flag_enable_select){
+
+
             if(!wmsquerylayersource)
                 return;
 
@@ -110,8 +115,8 @@ JSMapView.prototype.init = function () {
                 {'INFO_FORMAT': 'application/json'});
 
             this.javaConnector.singleClickAtFeature(url);
-        }
 
+        }
 
     }, this);
 
