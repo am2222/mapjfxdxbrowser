@@ -8,7 +8,6 @@ public final class gfpMapView extends MapView {
     private final Logger logger = Logger.getLogger(gfpMapView.class.getCanonicalName());
     public gfpMapView(){
         super();
-
     }
 
     /**

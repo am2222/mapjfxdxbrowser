@@ -25,7 +25,7 @@ Copyright 2015-2017 Peter-Josef Meisch (pj.meisch@sothawo.com)
 <!-- opening head tag alone in a row -->
 <head>
     <meta charset="UTF-8">
-    <title>sothawo MapView</title>
+    <title>GFP MapView</title>
     <link rel="stylesheet" href="ol/4.6.5/ol.css" type="text/css">
     <link rel="stylesheet" href="ol/ol-ext.css" type="text/css">
     <!-- replaced by: -->
@@ -40,7 +40,7 @@ Copyright 2015-2017 Peter-Josef Meisch (pj.meisch@sothawo.com)
         }
 
         #map {
-            height: 90%;
+            height: 100%;
             width: 100%;
             background: #ccc;
         }
@@ -53,6 +53,7 @@ Copyright 2015-2017 Peter-Josef Meisch (pj.meisch@sothawo.com)
     <script src="ol/4.6.5/ol-debug.js" type="text/javascript"></script>
     <script src="jquery-1.11.0.min.js" type="text/javascript"></script>
     <script src="ol/ol-ext.js" type="text/javascript"></script>
+    <script src="turf/turf.min.js" type="text/javascript"></script>
     <!-- replaced by: -->
     <!--<script type="text/javascript">-->
     <!--#polyfill.js#-->
@@ -75,11 +76,11 @@ Copyright 2015-2017 Peter-Josef Meisch (pj.meisch@sothawo.com)
 <script>
     var _javaConnector = {
         centerMovedTo: function (lat, lon) {
-            this.debug('center moved to ' + lat + ', ' + lon);
+            // this.debug('center moved to ' + lat + ', ' + lon);
         },
 
         pointerMovedTo: function (lat, lon) {
-            this.debug('pointer moved to ' + lat + ', ' + lon);
+            // this.debug('pointer moved to ' + lat + ', ' + lon);
         },
 
         singleClickAt: function (lat, lon) {
@@ -93,7 +94,7 @@ Copyright 2015-2017 Peter-Josef Meisch (pj.meisch@sothawo.com)
         },
 
         zoomChanged: function (zoom) {
-            this.debug('zoom changed to ' + zoom);
+            // this.debug('zoom changed to ' + zoom);
         },
 
         showLink: function (href) {
@@ -170,19 +171,19 @@ Copyright 2015-2017 Peter-Josef Meisch (pj.meisch@sothawo.com)
             console.log("singleClickAtFeature: " + url);
         },
         singleClickAtVectorFeature: function (geojson) {
-            console.log("singleClickAtVectorFeature: " + geojson);
+            // console.log("singleClickAtVectorFeature: " + geojson);
         },
         selectByBox: function (minLat, minLon, maxLat, maxLon) {
-            console.log("extent: " + minLat + ", " + minLon + ", " + maxLat + ", " + maxLon);
+            // console.log("extent: " + minLat + ", " + minLon + ", " + maxLat + ", " + maxLon);
         },
         deleteFeature: function (geojson) {
-            console.log("deleteFeature: " + geojson);
+            // console.log("deleteFeature: " + geojson);
         },
         insertFeature: function (geojson) {
-            console.log("insertFeature: " + geojson);
+            // console.log("insertFeature: " + geojson);
         },
         updateFeature: function (geojson) {
-            console.log("updateFeature: " + geojson);
+            // console.log("updateFeature: " + geojson);
         },
     };
 
@@ -206,183 +207,120 @@ Copyright 2015-2017 Peter-Josef Meisch (pj.meisch@sothawo.com)
     };
 
 
-    var wmsParams = new WMSParams();
-    wmsParams.setUrl('http://irs.gis-lab.info/?');
-    wmsParams.addParam('layers', 'landsat');
-    wmsParams.addParam('REQUEST', 'GetTile');
-    //        wmsParams.setUrl('http://geonode.wfp.org:80/geoserver/ows');
-    //        wmsParams.addParam('layers', 'geonode:admin_2_gaul_2015');
-   // jsMapView.setWMSParams(wmsParams);
-
-    //jsMapView.setMapType('OSM');
-    jsMapView.setZoom(18, 0);
-    jsMapView.setCenter(49.013517, 8.404435, 0);
+    jsMapView.setZoom(0, 0);
+    jsMapView.setCenter(0,0, 0);
 
 
     ///
     //backgroun layer
-    jsMapView.setBackgroundMapBaseURL("http://192.168.1.105/");
-
-    jsMapView.setBackgrounMap("street")
-    jsMapView.setEnableGlobe();
+    // jsMapView.setBackgroundMapBaseURL("http://127.0.0.1/");
+    //
+    // jsMapView.setBackgrounMap("street")
+    // jsMapView.setEnableGlobe();
 
     //dont forget to call load capabilities
-    var jqxhr = $.ajax( {
-        crossDomain:true,
-        url:'http://127.0.0.1:8080/geoserver/gas/wms?request=GetCapabilities&service=WMS&version=1.1.1',
-    } )
-        .done(function(response ) {
+    // var jqxhr = $.ajax( {
+    //     crossDomain:true,
+    //     url:'http://127.0.0.1:8080/geoserver/gas/wms?request=GetCapabilities&service=WMS&version=1.1.1',
+    // } )
+    //     .done(function(response ) {
+    //
+    //         jsMapView.loadcapabilities(response)
+    //         console.log("Capabilities are loaded fine")
+    //
+    //     })
+    //     .fail(function() {
+    //         console.log( "error" );
+    //     })
+    //     .always(function() {
+    //         console.log( "complete" );
+    //     });
 
-            jsMapView.loadcapabilities(response)
-
-
-            //adding layer
-            jsMapView.addlayer("wms","http://127.0.0.1:8080/geoserver/gas/wms","gas","GasNet_parcel",null,
-                "پارسل ها",true,false);
-
-            jsMapView.setwmsquerylayer("http://127.0.0.1:8080/geoserver/gas/wms","gas","GasNet_parcel");
-          //  jsMapView.set_editlayer("gas:GasNet_parcel","http://127.0.0.1:8080",0.5,"پارسل (ویرایش)");
-           // JSMapView.setMainbarPosition('left');
-
-
-
-        })
-        .fail(function() {
-            console.log( "error" );
-        })
-        .always(function() {
-            console.log( "complete" );
-        });
-
-
-
-
-    var geojsonObject = {
-        'type': 'FeatureCollection',
-        'crs': {
-            'type': 'name',
-            'properties': {
-                'name': 'EPSG:3857'
-            }
-        },
-        'features': [{
-            'type': 'Feature',
-            'geometry': {
-                'type': 'Point',
-                'coordinates': [0, 0]
-            }
-        }, {
-            'type': 'Feature',
-            'geometry': {
-                'type': 'LineString',
-                'coordinates': [[4e6, -2e6], [8e6, 2e6]]
-            }
-        }, {
-            'type': 'Feature',
-            'geometry': {
-                'type': 'LineString',
-                'coordinates': [[4e6, 2e6], [8e6, -2e6]]
-            }
-        }, {
-            'type': 'Feature',
-            'geometry': {
-                'type': 'Polygon',
-                'coordinates': [[[-5e6, -1e6], [-4e6, 1e6], [-3e6, -1e6]]]
-            }
-        }, {
-            'type': 'Feature',
-            'geometry': {
-                'type': 'MultiLineString',
-                'coordinates': [
-                    [[-1e6, -7.5e5], [-1e6, 7.5e5]],
-                    [[1e6, -7.5e5], [1e6, 7.5e5]],
-                    [[-7.5e5, -1e6], [7.5e5, -1e6]],
-                    [[-7.5e5, 1e6], [7.5e5, 1e6]]
-                ]
-            }
-        }, {
-            'type': 'Feature',
-            'geometry': {
-                'type': 'MultiPolygon',
-                'coordinates': [
-                    [[[-5e6, 6e6], [-5e6, 8e6], [-3e6, 8e6], [-3e6, 6e6]]],
-                    [[[-2e6, 6e6], [-2e6, 8e6], [0, 8e6], [0, 6e6]]],
-                    [[[1e6, 6e6], [1e6, 8e6], [3e6, 8e6], [3e6, 6e6]]]
-                ]
-            }
-        }, {
-            'type': 'Feature',
-            'geometry': {
-                'type': 'GeometryCollection',
-                'geometries': [{
-                    'type': 'LineString',
-                    'coordinates': [[-5e6, -5e6], [0, -5e6]]
-                }, {
-                    'type': 'Point',
-                    'coordinates': [4e6, -5e6]
-                }, {
-                    'type': 'Polygon',
-                    'coordinates': [[[1e6, -6e6], [2e6, -4e6], [3e6, -6e6]]]
-                }]
-            }
-        }]
-    };
-
-     jsMapView.addFeaturesToVector(geojsonObject,true,"geojson",false);
-     jsMapView.zoomtoOverlayLayer();
-
-    jsMapView.setEnableSelect();
-
-   // jsMapView.addTestwms();
-    var addAll = function () {
-        // jsMapView.addMarker('castle-marker', './markers/blue_map_marker.png', 49.013517, 8.404435, -32, -64);
-        // jsMapView.addLabel('castle-label', 'Das Schloss', '', 49.013517, 8.404435, 0, 0);
-
-        // var wkt = 'POLYGON((10.689 -25.092, 34.595 ' +
-        //     '-20.170, 38.814 -35.639, 13.502 ' +
-        //     '-39.155, 10.689 -25.092))';
-        // jsMapView.addwktfeature(wkt,true);
-        // jsMapView.zoomtoOverlayLayer();
+    //
+    //
+    //
+    // var geojsonObject = {
+    //     'type': 'FeatureCollection',
+    //     'crs': {
+    //         'type': 'name',
+    //         'properties': {
+    //             'name': 'EPSG:3857'
+    //         }
+    //     },
+    //     'features': [{
+    //         'type': 'Feature',
+    //         'geometry': {
+    //             'type': 'Point',
+    //             'coordinates': [0, 0]
+    //         }
+    //     }, {
+    //         'type': 'Feature',
+    //         'geometry': {
+    //             'type': 'LineString',
+    //             'coordinates': [[4e6, -2e6], [8e6, 2e6]]
+    //         }
+    //     }, {
+    //         'type': 'Feature',
+    //         'geometry': {
+    //             'type': 'LineString',
+    //             'coordinates': [[4e6, 2e6], [8e6, -2e6]]
+    //         }
+    //     }, {
+    //         'type': 'Feature',
+    //         'geometry': {
+    //             'type': 'Polygon',
+    //             'coordinates': [[[-5e6, -1e6], [-4e6, 1e6], [-3e6, -1e6]]]
+    //         }
+    //     }, {
+    //         'type': 'Feature',
+    //         'geometry': {
+    //             'type': 'MultiLineString',
+    //             'coordinates': [
+    //                 [[-1e6, -7.5e5], [-1e6, 7.5e5]],
+    //                 [[1e6, -7.5e5], [1e6, 7.5e5]],
+    //                 [[-7.5e5, -1e6], [7.5e5, -1e6]],
+    //                 [[-7.5e5, 1e6], [7.5e5, 1e6]]
+    //             ]
+    //         }
+    //     }, {
+    //         'type': 'Feature',
+    //         'geometry': {
+    //             'type': 'MultiPolygon',
+    //             'coordinates': [
+    //                 [[[-5e6, 6e6], [-5e6, 8e6], [-3e6, 8e6], [-3e6, 6e6]]],
+    //                 [[[-2e6, 6e6], [-2e6, 8e6], [0, 8e6], [0, 6e6]]],
+    //                 [[[1e6, 6e6], [1e6, 8e6], [3e6, 8e6], [3e6, 6e6]]]
+    //             ]
+    //         }
+    //     }, {
+    //         'type': 'Feature',
+    //         'geometry': {
+    //             'type': 'GeometryCollection',
+    //             'geometries': [{
+    //                 'type': 'LineString',
+    //                 'coordinates': [[-5e6, -5e6], [0, -5e6]]
+    //             }, {
+    //                 'type': 'Point',
+    //                 'coordinates': [4e6, -5e6]
+    //             }, {
+    //                 'type': 'Polygon',
+    //                 'coordinates': [[[1e6, -6e6], [2e6, -4e6], [3e6, -6e6]]]
+    //             }]
+    //         }
+    //     }]
+    // };
+    //
+    //  jsMapView.addFeaturesToVector(geojsonObject,true,"geojson",false);
+    //  jsMapView.zoomtoOverlayLayer();
+    //
+    //  jsMapView.setEnableSelect();
 
 
-        // jsMapView.setDisableGlobe();
-        jsMapView.addTestwms();
-
-    };
-
-    var showAll = function () {
-
-        setEnableSelectByBox();
-    };
-
-    var hideAll = function () {
-        jsMapView.hideMapObject('castle-marker');
-        jsMapView.hideMapObject('castle-label');
-    };
-
-    var removeAll = function () {
-        jsMapView.removeMapObject('castle-marker');
-        jsMapView.removeMapObject('castle-label');
-    };
 
 
 
 </script>
-<!-- replaced by: -->
-<!--<script type="text/javascript">-->
-<!--#functions.js#-->
-<!--#MapObject.js#-->
-<!--#coordinateline.js#-->
-<!--#mapview.js#-->
-<!--</script>-->
 
 
-<!-- place for some test stuff -->
-<div>
-    <button onclick="addAll();">add</button>
-    <button onclick="showAll();">show</button>
-    <button onclick="hideAll();">hide</button>
-    <button onclick="removeAll();">remove</button>
-</div>
 </body>
 </html>

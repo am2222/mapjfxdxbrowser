@@ -14,7 +14,10 @@
    limitations under the License.
 */
 package com.sothawo.mapjfx;
-
+import com.teamdev.jxbrowser.chromium.Browser;
+import com.teamdev.jxbrowser.chromium.BrowserCore;
+import com.teamdev.jxbrowser.chromium.internal.Environment;
+import com.teamdev.jxbrowser.chromium.javafx.BrowserView;
 import com.sothawo.mapjfx.event.ClickType;
 import com.sothawo.mapjfx.event.MapLabelEvent;
 import com.sothawo.mapjfx.event.MapViewEvent;
@@ -32,12 +35,14 @@ import javafx.event.EventType;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Paint;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import netscape.javascript.JSException;
 import netscape.javascript.JSObject;
 
+import javax.swing.*;
 import java.awt.*;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -734,6 +739,8 @@ public class MapView extends Region {
         // the mapView is embededded in a jar and loaded via jar: URI. If we load the page with loadContent, these
         // restrictions do not apply.
         loadMapViewHtml().ifPresent((html) -> {
+
+
             // instantiate the WebView, resize it with this region by letting it observe the changes and add it as child
             WebView webView = new WebView();
             logger.finer("WebView created");
@@ -1141,7 +1148,7 @@ public class MapView extends Region {
          */
         public void centerMovedTo(double lat, double lon) {
             Coordinate newCenter = new Coordinate(lat, lon);
-            logger.finer(() -> "JS reports center value " + newCenter);
+//            logger.finer(() -> "JS reports center value " + newCenter);
             lastCoordinateFromMap.set(newCenter);
             setCenter(newCenter);
         }
@@ -1156,7 +1163,7 @@ public class MapView extends Region {
          */
         public void pointerMovedTo(double lat, double lon) {
             final Coordinate coordinate = new Coordinate(lat, lon);
-            logger.finer(() -> "JS reports pointer move " + coordinate);
+//            logger.finer(() -> "JS reports pointer move " + coordinate);
             // fire a coordinate event to whom it may be of importance
             fireEvent(new MapViewEvent(MapViewEvent.MAP_POINTER_MOVED, coordinate));
         }
@@ -1460,7 +1467,7 @@ public class MapView extends Region {
          */
         public void zoomChanged(double newZoom) {
             final long roundedZoom = Math.round(newZoom);
-            logger.finer(() -> "JS reports zoom value " + roundedZoom);
+//            logger.finer(() -> "JS reports zoom value " + roundedZoom);
             lastZoomFromMap.set(roundedZoom);
             setZoom(roundedZoom);
         }
@@ -1497,14 +1504,29 @@ public class MapView extends Region {
          */
         public void extentChanged(double latMin, double lonMin, double latMax, double lonMax) {
             final Extent extent = Extent.forCoordinates(new Coordinate(latMin, lonMin), new Coordinate(latMax, lonMax));
-            logger.finer(() -> "JS reports extend change: " + extent);
+//            logger.finer(() -> "JS reports extend change: " + extent);
             fireEvent(new MapViewEvent(MapViewEvent.MAP_BOUNDING_EXTENT, extent));
         }
 
-        public void singleClickAtFeature(String url) {
+        public void singleClickAtFeature(String url,double lat, double lon) {
+            Coordinate coordinate = new Coordinate(lat, lon);
             logger.finer(() -> "JS reports singleClickAtFeature url: " + url);
-            fireEvent(new MapViewEvent(MapViewEvent.MAP_SINGLE_CLICK_AT_FEATURE, url));
+            fireEvent(new MapViewEvent(MapViewEvent.MAP_SINGLE_CLICK_AT_FEATURE, url,coordinate));
         }
 
+        public void deleteFeature(String geojson) {
+            logger.finer(() -> "JS reports deleteFeature geojson: " + geojson);
+            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_DELETE_EVENT, geojson));
+        }
+
+        public void updateFeature(String geojson) {
+            logger.finer(() -> "JS reports updateFeature geojson: " + geojson);
+            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_UPDATE_EVENT, geojson));
+        }
+
+        public void insertFeature(String geojson) {
+            logger.finer(() -> "JS reports insertFeature geojson: " + geojson);
+            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_ADD_EVENT, geojson));
+        }
     }
 }

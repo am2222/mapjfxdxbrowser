@@ -2,6 +2,35 @@
 Refer to functions comment for more info about input parameters of each function. Here we only have example codes how to use.
 
 
+#Exit
+To exit do not forget to call `system.exit(0)`
+
+```
+        scene.getWindow().setOnCloseRequest(new EventHandler<WindowEvent>() {
+            @Override
+            public void handle(WindowEvent event) {
+               // Platform.exit();
+                Platform.exit();
+                Thread start=new Thread(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        // TODO Auto-generated method stub
+                        System.exit(0);
+                    }
+                });
+                start.start();
+
+            }
+        });
+```
+
+#Debug Mode
+You can enable map debugger 
+
+``        
+mapView.DEBUG=new SimpleBooleanProperty(this, "DEBUG", true);;
+``
 
 #Configuration
 There are two steps to configure map. first you must get map capabilities from a url and pass it into mapview object.

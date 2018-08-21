@@ -24,13 +24,15 @@ var _sourceFeatures = new ol.source.Vector({
 });
 // layer for the featuress
 var _layerFeatures = new ol.layer.Vector({
-    source: _sourceFeatures
+    source: _sourceFeatures,
+    displayInLayerSwitcher:false
 });
 
 // layer groups for the different map styles
 var _layersOSM = new ol.layer.Group({
     layers: [
         new ol.layer.Tile({
+            displayInLayerSwitcher:false,
             source: new ol.source.OSM()
         }),
         _layerFeatures
@@ -68,6 +70,8 @@ var _map = new ol.Map({
 
 var _view = _map.getView();
 
+var _flag_enable_select=false;
+
 /*******************************************************************************************************************
  * Connector object for the java application with the functions to be called.
  * @param javaConnector the javaConnector object
@@ -96,28 +100,28 @@ JSMapView.prototype.init = function () {
         this.javaConnector.pointerMovedTo(coordinate[1], coordinate[0]);
     }, this);
 
-    // _map.on('singleclick', function (evt) {
-    //     var coordinate = cToWGS84(evt.coordinate);
-    //     // lat/lon reversion
-    //     this.javaConnector.singleClickAt(coordinate[1], coordinate[0]);
-    // }, this);
     _map.on('singleclick', function (evt) {
-            var coordinate = cToWGS84(evt.coordinate);
+
         //     // lat/lon reversion
-            this.javaConnector.singleClickAt(coordinate[1], coordinate[0]);
+           // this.javaConnector.singleClickAt(coordinate[1], coordinate[0]);
         if(_flag_enable_select){
-
-
-            if(!wmsquerylayersource)
+            var coordinate = cToWGS84(evt.coordinate);
+            if(!wmsquerylayersource){
+                this.javaConnector.debug("Please set wmsquerylayersource first");
+                //alert("Please set wmsquerylayersource first")
                 return;
+            }
+
 
             var viewResolution = /** @type {number} */ (_view.getResolution());
             var url = wmsquerylayersource.getGetFeatureInfoUrl(
                 evt.coordinate, viewResolution, 'EPSG:3857',
                 {'INFO_FORMAT': 'application/json'});
 
-            this.javaConnector.singleClickAtFeature(url);
+            this.javaConnector.singleClickAtFeature(url,coordinate[1], coordinate[0]);
 
+        }else{
+            this.javaConnector.debug("_flag_enable_select is false enable select");
         }
 
     }, this);
@@ -237,6 +241,7 @@ JSMapView.prototype.setExtent = function (minLat, minLon, maxLat, maxLon, animat
  * @param {string} newType the new map type
  */
 JSMapView.prototype.setMapType = function (newType) {
+    return;
     // reset the patched flag; the new layer can have different attributions
     this.anchorsPatched = false;
     if (newType == 'OSM') {
@@ -649,6 +654,13 @@ JSMapView.prototype.reportExtent = function () {
     }
 };
 
+/**
+ * returns java connector to use in gfpmapview
+ * @returns {*}
+ */
+JSMapView.prototype.getJavaConnector = function () {
+    return this.javaConnector;
+}
 
 
 /**
@@ -659,4 +671,5 @@ function getJSMapView() {
     jsMapView.init();
     return jsMapView;
 }
+
 

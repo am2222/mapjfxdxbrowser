@@ -23,16 +23,14 @@ import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.Slider;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.awt.event.ActionEvent;
@@ -117,6 +115,9 @@ public class TestApp extends Application {
         launch(args);
     }
 
+    boolean globstatus=true;
+    boolean selectstat=true;
+
     @Override
     public void start(final Stage primaryStage) throws Exception {
         logger.info("starting devtest program...");
@@ -126,7 +127,7 @@ public class TestApp extends Application {
         // the MapView is created first as the other elements reference it
         mapView = new gfpMapView();
         // animate pan and zoom with 500ms
-        mapView.setAnimationDuration(500);
+        mapView.setAnimationDuration(100);
         borderPane.setCenter(mapView);
 
         // at the top some buttons
@@ -252,6 +253,14 @@ public class TestApp extends Application {
 
         mapView.addEventHandler(MapViewEvent.MAP_SINGLE_CLICK_AT_FEATURE, event -> {
             logger.info("MAP_SINGLE_CLICK_AT_FEATURE event: " + event.getURL());
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Get Data from this url : " + event.getURL() + " ?", ButtonType.OK);
+            alert.showAndWait();
+            event.consume();
+        });
+
+        mapView.addEventHandler(MapViewEvent.MAP_WFS_DELETE_EVENT, event -> {
+            logger.info("MAP_WFS_DELETE_EVENT event: " + event.getURL());
+
             event.consume();
         });
 
@@ -366,18 +375,16 @@ public class TestApp extends Application {
         vbox.getChildren().add(hbox);
 
 
-        String wkt = "POLYGON((10.689 -25.092, 34.595 " +
-                "-20.170, 38.814 -35.639, 13.502 " +
-                "-39.155, 10.689 -25.092))";
+
 
         Button btn = new Button();
-        btn.setText("Karlsruhe castle");
+        btn.setText("Init Map");
 //        btn.setOnAction(event ->mapView.addWktFeatureToOverlay(wkt,true));
         btn.setOnAction(new EventHandler<javafx.event.ActionEvent>() {
             @Override
             public void handle(javafx.event.ActionEvent event) {
-                mapView.addWktFeatureToOverlay(wkt,true);
-//                mapView.zoomToOverlay();
+
+//
 
 //                mapView.setStartMeasure("Polygon");
                 //to init basemap you should setBackgroundMapBaseURL to the server ip, read this ip from a
@@ -388,7 +395,7 @@ public class TestApp extends Application {
 
                 //TO enable select feature
                 mapView.setWMSQueryLayer("http://127.0.0.1:8080/geoserver/gas/wms","gas","GasNet_parcel");
-                mapView.setEnableSelect(true);
+                mapView.setEnableSelect(selectstat);
 
                 //Then you can listen to map event
 //                mapView.addEventHandler(MapViewEvent.MAP_SINGLE_CLICK_AT_FEATURE, event -> {
@@ -398,7 +405,7 @@ public class TestApp extends Application {
 
 
                 //To enable globe control
-                mapView.setGlobeControl(true);
+                mapView.setGlobeControl(globstatus);
 
                 ///TO load a layer from server (based on users access)
 
@@ -416,42 +423,84 @@ public class TestApp extends Application {
 
         hbox.getChildren().add(btn);
 
-        btn = new Button();
-        btn.setText("Karlsruhe harbour");
-        btn.setOnAction(event -> mapView.setCenter(coordKarlsruheHarbour));
-        hbox.getChildren().add(btn);
+        Button globebtn = new Button();
+        globebtn.setText("Disable Globe");
+        globebtn.setOnAction(new EventHandler<javafx.event.ActionEvent>() {
+            @Override
+            public void handle(javafx.event.ActionEvent event) {
+                globstatus=!globstatus;
+                mapView.setGlobeControl(globstatus);
+               if(globstatus){
+                   globebtn.setText("Disable Globe");
+               }else{
+                   globebtn.setText("Enable Globe");
+               }
+            }
+        });
+        hbox.getChildren().add(globebtn);
 
         btn = new Button();
-        btn.setText("Karlsruhe station");
-        btn.setOnAction(event -> mapView.setCenter(coordKarlsruheStation));
+        btn.setText("Add wkt to map and zoom");
+        btn.setOnAction(new EventHandler<javafx.event.ActionEvent>() {
+            @Override
+            public void handle(javafx.event.ActionEvent event) {
+                String wkt = "POLYGON((10.689 -25.092, 34.595 " +
+                        "-20.170, 38.814 -35.639, 13.502 " +
+                        "-39.155, 10.689 -25.092))";
+
+                mapView.addWktFeatureToOverlay(wkt,false);
+                mapView.zoomToOverlay();
+            }
+        });
         hbox.getChildren().add(btn);
+
+//        Slider slider = new Slider(MapView.MIN_ZOOM, MapView.MAX_ZOOM, MapView.INITIAL_ZOOM);
+//        slider.setBlockIncrement(1);
+//        slider.setShowTickMarks(true);
+//        slider.setShowTickLabels(true);
+//        slider.setSnapToTicks(true);
+//        slider.setMajorTickUnit(MapView.MAX_ZOOM / 4);
+//        slider.setMinorTickCount((MapView.MAX_ZOOM / 4) - 1);
+//        slider.valueProperty().bindBidirectional(mapView.zoomProperty());
+//        slider.setSnapToTicks(true);
+//        HBox.setHgrow(slider, Priority.ALWAYS);
+//        hbox.getChildren().add(slider);
+
+//        hbox = new HBox();
+//        hbox.setPadding(new Insets(5, 5, 5, 5));
+//        hbox.setSpacing(5);
+//        vbox.getChildren().add(hbox);
 
         btn = new Button();
-        btn.setText("all");
-        btn.setOnAction(event -> mapView.setExtent(extentAll));
+        btn.setText("Add another WKT and clean the other one");
+        btn.setOnAction(new EventHandler<javafx.event.ActionEvent>() {
+            @Override
+            public void handle(javafx.event.ActionEvent event) {
+                String wkt = "POINT(10.689 -25.092)";
+
+                mapView.addWktFeatureToOverlay(wkt,true);
+                mapView.zoomToOverlay();
+            }
+        });
         hbox.getChildren().add(btn);
 
-        Slider slider = new Slider(MapView.MIN_ZOOM, MapView.MAX_ZOOM, MapView.INITIAL_ZOOM);
-        slider.setBlockIncrement(1);
-        slider.setShowTickMarks(true);
-        slider.setShowTickLabels(true);
-        slider.setSnapToTicks(true);
-        slider.setMajorTickUnit(MapView.MAX_ZOOM / 4);
-        slider.setMinorTickCount((MapView.MAX_ZOOM / 4) - 1);
-        slider.valueProperty().bindBidirectional(mapView.zoomProperty());
-        slider.setSnapToTicks(true);
-        HBox.setHgrow(slider, Priority.ALWAYS);
-        hbox.getChildren().add(slider);
 
-        hbox = new HBox();
-        hbox.setPadding(new Insets(5, 5, 5, 5));
-        hbox.setSpacing(5);
-        vbox.getChildren().add(hbox);
 
-        btn = new Button();
-        btn.setText("OSM");
-        btn.setOnAction(evt -> mapView.setMapType(MapType.OSM));
-        hbox.getChildren().add(btn);
+        Button selectbtn = new Button();
+        selectbtn.setText("Disable Select");
+        selectbtn.setOnAction(new EventHandler<javafx.event.ActionEvent>() {
+            @Override
+            public void handle(javafx.event.ActionEvent event) {
+                selectstat=!selectstat;
+                mapView.setEnableSelect(selectstat);
+                if(selectstat){
+                    selectbtn.setText("Disable Select");
+                }else{
+                    selectbtn.setText("Enable Select");
+                }
+            }
+        });
+        hbox.getChildren().add(selectbtn);
 
         btn = new Button();
         btn.setText("ST");

@@ -9,6 +9,103 @@ var _geojson_format = new ol.format.GeoJSON();
 var _4326_projection = new ol.proj.Projection({code: "EPSG:4326"});
 var _3857_projection = new ol.proj.Projection({code: "EPSG:3857"});
 
+
+
+
+////start of background
+
+var background_base_url='';
+var back_sattlite=    new ol.layer.Tile({
+    title: "آفلاین ماهواره ای",
+    baseLayer: true,
+    displayInLayerSwitcherImage:true,
+    displayInLayerSwitcher:false,
+
+    logo:background_base_url+'geosuite/api/mbtile/sattlite/0/0/0',
+
+    source: new ol.source.XYZ({
+        url: background_base_url+'/geosuite/api/mbtile/sattlite/{z}/{x}/{y}'
+    })
+});
+var back_road=    new ol.layer.Tile({
+    title: "آفلاین معابر",
+    baseLayer: true,
+    displayInLayerSwitcherImage:true,
+    displayInLayerSwitcher:false,
+    logo:background_base_url+'/geosuite/api/mbtile/road/0/0/0',
+
+    source: new ol.source.XYZ({
+        url: background_base_url+'/geosuite/api/mbtile/road/{z}/{x}/{y}'
+    })
+});
+
+_map.addLayer(back_sattlite);
+_map.addLayer(back_road);
+
+function setbackgrounmap(type) {
+    var params;
+    if(!type|| type=='nobase'){
+        back_sattlite.setVisible(false);
+        back_road.setVisible(false);
+    }
+
+
+    var source;
+    switch (type){
+        case "street":
+            back_road.setVisible(true);
+
+
+            break;
+        case "hybrid":
+            back_sattlite.setVisible(true);
+
+            break;
+
+        default:
+
+            break
+    }
+    // back.setSource(source)
+}
+ol.control.LayerSwitcherImage.prototype.drawList = function(ul, layers)
+{	var self = this;
+    var setVisibility = function(e)
+    {	e.preventDefault();
+        var l = $(this).data("layer");
+        self.switchLayerVisibility(l,layers);
+        if (e.type=="touchstart") $(self.element).addClass("ol-collapsed");
+    };
+    ul.css("height","auto");
+    layers.forEach(function(layer)
+    {	if (layer.get("displayInLayerSwitcherImage"))
+    {	var prev = layer.getPreview ? layer.getPreview([0,0],150000) : ["none"];
+        var d = $("<li>").addClass("ol-imgcontainer")
+            .data ('layer', layer)
+            .click (setVisibility)
+            .on ("touchstart", setVisibility);
+        if (layer.getVisible()) d.addClass("select");
+        for (var k=0; k<prev.length; k++)
+        {	$("<img>").attr('src', prev[k])
+            .appendTo(d);
+        }
+        $("<p>").text(layer.get("title") || layer.get("name")).appendTo(d);
+        if (self.testLayerVisibility(layer)) d.addClass("ol-layer-hidden");
+        d.appendTo(ul);
+    }
+    });
+};
+_map.addControl (new ol.control.LayerSwitcherImage());
+
+//end of backgroun layer
+
+
+
+
+
+
+
+
 var fill = new ol.style.Fill({
     color: [180, 0, 0, 0.3]
 });
@@ -31,10 +128,70 @@ var style = new ol.style.Style({
 var _selected_feature_source = new ol.source.Vector();
 var _selectedfeaturelayer = new ol.layer.Vector({
             source: _selected_feature_source ,
+            displayInLayerSwitcher:false,
             style:style
          });
 // _selectedfeaturelayer.setStyle(style);
 _map.addLayer(_selectedfeaturelayer);
+
+
+////turf.js section start
+var turf_style = new ol.style.Style({
+    image: new ol.style.Circle({
+        fill: new ol.style.Fill({
+            color: '#a1bff2'
+        }),
+        stroke: new ol.style.Stroke({
+            color: '#a5d6f2',
+            width: 1
+        }),
+        radius: 3
+    }),
+    fill: new ol.style.Fill({
+        color: '#a1bff2'
+    }),
+    stroke: new ol.style.Stroke({
+        color: '#a5d6f2',
+        width: 1
+    })
+});
+var turf_source = new ol.source.Vector();
+
+var turf_vectorLayer = new ol.layer.Vector({
+    source: turf_source,
+    displayInLayerSwitcher:false,
+    style:turf_style
+});
+
+
+_map.addLayer(turf_vectorLayer);
+
+//turf helpers
+function fromoltoturf(olobject) {
+    // convert to a turf.js feature
+    var turfo= _geojson_format.writeFeatureObject(olobject);
+   return turf.toWgs84(turfo,{mutate:true});
+}
+
+function fromturftool(turfobject) {
+    // convert the generated point to a OpenLayers feature
+    var marker = _geojson_format.readFeature(turfobject);
+    marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+    turf_source.addFeature(marker);
+    turf_source.changed();
+    return marker;
+}
+
+function cleanTurfSource() {
+    turf_source.forEachFeature(new function (f) {
+        turf_source.removeFeature(f)
+    });
+    turf_source.changed();
+}
+
+
+////trufjs end
+
 
 
 
@@ -92,7 +249,7 @@ selectClick.on('select', function(e) {
     var geojson=JSON.stringify(obj);
     console.log(geojson);
 
-    this.javaConnector.singleClickAtVectorFeature(geojson);
+    _javaConnector.singleClickAtVectorFeature(geojson);
     //perform wms select
     // if(!wmsquerylayersource)
     //     return;
@@ -105,7 +262,7 @@ selectClick.on('select', function(e) {
     // get_feature_onclick(url,fs);
 
 });
-var _flag_enable_select=false;
+
 function setEnableSelect() {
     _map.addInteraction(selectClick);
     _flag_enable_select=true;
@@ -165,8 +322,8 @@ function get_feature_onclick(url,fs) {
             url:url,
         }).then(function(response) {
             // _selected_feature_source.clear();
-            var geojsonFormat = new ol.format.GeoJSON();
-            var features = geojsonFormat.readFeatures(response,
+            //var geojsonFormat = new ol.format.GeoJSON();
+            var features = _geojson_format.readFeatures(response,
                 {featureProjection: 'EPSG:3857'});
 
             // _selected_feature_source.addFeatures(features);
@@ -194,6 +351,7 @@ JSMapView.prototype.setwmsquerylayer  = function(url,workspace,layer) {
         noSwitcherDelete:true,
         allwaysOnTop:false,
     });
+
 
 }
 
@@ -254,91 +412,6 @@ function print(dim,resolution) {
 
 
 
-////start of background
-
-var background_base_url='http://127.0.0.1:8000';
-var back_sattlite=    new ol.layer.Tile({
-    title: "آفلاین ماهواره ای",
-    baseLayer: true,
-    displayInLayerSwitcherImage:true,
-    displayInLayerSwitcher:false,
-
-    logo:background_base_url+'geosuite/api/mbtile/sattlite/0/0/0',
-
-    source: new ol.source.XYZ({
-        url: background_base_url+'/geosuite/api/mbtile/sattlite/{z}/{x}/{y}'
-    })
-});
-var back_road=    new ol.layer.Tile({
-    title: "آفلاین معابر",
-    baseLayer: true,
-    displayInLayerSwitcherImage:true,
-    displayInLayerSwitcher:false,
-    logo:background_base_url+'/geosuite/api/mbtile/road/0/0/0',
-
-    source: new ol.source.XYZ({
-        url: background_base_url+'/geosuite/api/mbtile/road/{z}/{x}/{y}'
-    })
-});
-
-
-
-function setbackgrounmap(type) {
-    var params;
-    if(!type|| type=='nobase'){
-        back_sattlite.setVisible(false);
-        back_road.setVisible(false);
-    }
-
-
-    var source;
-    switch (type){
-        case "street":
-            back_road.setVisible(true);
-
-
-            break;
-        case "hybrid":
-            back_sattlite.setVisible(true);
-
-            break;
-
-        default:
-
-            break
-    }
-    // back.setSource(source)
-}
-ol.control.LayerSwitcherImage.prototype.drawList = function(ul, layers)
-{	var self = this;
-    var setVisibility = function(e)
-    {	e.preventDefault();
-        var l = $(this).data("layer");
-        self.switchLayerVisibility(l,layers);
-        if (e.type=="touchstart") $(self.element).addClass("ol-collapsed");
-    };
-    ul.css("height","auto");
-    layers.forEach(function(layer)
-    {	if (layer.get("displayInLayerSwitcherImage"))
-    {	var prev = layer.getPreview ? layer.getPreview([0,0],150000) : ["none"];
-        var d = $("<li>").addClass("ol-imgcontainer")
-            .data ('layer', layer)
-            .click (setVisibility)
-            .on ("touchstart", setVisibility);
-        if (layer.getVisible()) d.addClass("select");
-        for (var k=0; k<prev.length; k++)
-        {	$("<img>").attr('src', prev[k])
-            .appendTo(d);
-        }
-        $("<p>").text(layer.get("title") || layer.get("name")).appendTo(d);
-        if (self.testLayerVisibility(layer)) d.addClass("ol-layer-hidden");
-        d.appendTo(ul);
-    }
-    });
-};
-_map.addControl (new ol.control.LayerSwitcherImage());
-
-//end of backgroun layer
 
 
 
@@ -1034,6 +1107,12 @@ JSMapView.prototype.setDisableGlobe=function () {
 
 JSMapView.prototype.setEnableGlobe=function () {
     DisableGlobe();
+    ov = new ol.control.Globe(
+        {	layers: [back_road,back_sattlite],
+            follow: true,
+            // align: 'right',
+            panAnimation: "elastic"
+        });
     _map.addControl(ov);
 }
 
@@ -1108,11 +1187,11 @@ JSMapView.prototype.setBackgroundMapBaseURL = function (baseurl) {
     });
     back_sattlite.setSource(source_sattlite);
     back_road.setSource(source_road);
-
-    _map.addLayer(back_sattlite);
-    _map.addLayer(back_road);
+    back_sattlite.setVisible(false);
 
     return;
+/**
+ *
 
     back_road=    new ol.layer.Tile({
         title: "آفلاین معابر",
@@ -1161,6 +1240,7 @@ JSMapView.prototype.setBackgroundMapBaseURL = function (baseurl) {
     _map.addLayer(back_sattlite);
     _map.addLayer(back_road);
     back_road.setVisible(false);
+    */
 };
 
 
@@ -1281,11 +1361,11 @@ JSMapView.prototype.addTestwms = function () {
     // set_editlayer('gas:GasNet_parcel','http://127.0.0.1:8080',1);
 };
 
-var formatGML = new ol.format.GML({
-    featureNS: 'http://127.0.0.1:8080/geoserver/gas/ows',
-    featureType: 'gas:GasNet_riser',
-    srsName: 'EPSG:3857'
-});
+// var formatGML = new ol.format.GML({
+//     featureNS: 'http://127.0.0.1:8080/geoserver/gas/ows',
+//     featureType: 'gas:GasNet_riser',
+//     srsName: 'EPSG:3857'
+// });
 
 
 var sourceWFS;
@@ -1301,8 +1381,8 @@ JSMapView.prototype.remove_edit_layer =function () {
 
 JSMapView.prototype.set_editlayer = function (featureNS,url,maxres,title) {
 
-    alert("set editlayer");
-    formatGML.featureType=featureNS;//'gas:GasNet_riser';
+    console.log("set editlayer");
+    // formatGML.featureType=featureNS;//'gas:GasNet_riser';
     sourceWFS = new ol.source.Vector({
         format: new ol.format.GeoJSON(),
         url: function(extent) {
@@ -1364,6 +1444,7 @@ JSMapView.prototype.set_editlayer = function (featureNS,url,maxres,title) {
 JSMapView.prototype.loadcapabilities = function (respond) {
  loadcapabilities(respond);
 };
+
 /**
  *
  * @param value
@@ -1392,7 +1473,6 @@ JSMapView.prototype.setMainbarPosition = function (value) {
             setMainbarPosition(_mainbarPosition);
     }
 };
-
 ///start of edittor toolbar
 
 /**
@@ -1417,6 +1497,7 @@ var mainbar = new ol.control.Bar();
 var snapi = new ol.interaction.SnapGuides();
 var snap ;
 enable_grid_snap=false;
+
 function enablesnapping(vector) {
     if(enable_grid_snap)
         return;
@@ -1431,6 +1512,8 @@ function enablesnapping(vector) {
     snap = new ol.interaction.Snap({
         source: vector.getSource()
     });
+
+    snap.source_.addFeatures(turf_source.getFeatures())
     _map.addInteraction(snap);
 }
 
@@ -1461,6 +1544,7 @@ function enableEditorBar(vector,featuretype) {
             title: "حذف عارضه",
             handleClick: function()
             {
+              //  _javaConnector.debug('delete feature tool activated');
                 editorRemoveInteraction();
                 interaction = new ol.interaction.Select();
                 interaction.getFeatures().on('add', function (e) {
@@ -1471,7 +1555,7 @@ function enableEditorBar(vector,featuretype) {
                 _map.addInteraction(interaction);
 
 
-                enableSnapping(vector)
+                enablesnapping(vector)
 
                 // var features = selectCtrl.getInteraction().getFeatures();
                 // if (!features.getLength()) info("Select an object first...");
@@ -1515,7 +1599,7 @@ function enableEditorBar(vector,featuretype) {
                         transactWFS('update', clone);
                     }
                 });
-                enableSnapping(vector)
+                enablesnapping(vector)
 
                 // var features = selectCtrl.getInteraction().getFeatures();
                 // if (!features.getLength()) info("Select an object first...");
@@ -1597,10 +1681,38 @@ function enableEditorBar(vector,featuretype) {
                         break;
 
                 }
-                enableSnapping(vector)
+                enablesnapping(vector)
 
             }
         });
+
+
+
+    var addfeaturebtn=new ol.control.Button(
+        {	html: '<i class="fa fa-line"></i>',
+            title: "یافتن نقطه بر روی خط",
+            handleClick: function()
+            {
+                editorRemoveInteraction();
+                interaction = new ol.interaction.Draw({
+                    type: 'LineString',
+                    source: _selectedfeaturelayer.getSource()
+                });
+                //adding snap to grid interaction
+               // snapi.setDrawInteraction(interaction);
+              //  _map.addInteraction(snapi);
+                _map.addInteraction(interaction);
+                interaction.on('drawend', function (e) {
+                    transactWFS('pointonline', e.feature);
+                });
+
+
+                enablesnapping(vector)
+
+            }
+        });
+
+
 
     editbar.addControl(deletefeaturebtn);
     editbar.addControl(modifyfeaturebtn);
@@ -1773,17 +1885,109 @@ var transactWFS = function (mode, f) {
     var geojson=JSON.stringify(obj);
     switch (mode) {
         case 'insert':
-            this.javaConnector.insertFeature(geojson);
+            _javaConnector.insertFeature(geojson);
             break;
         case 'update':
-            this.javaConnector.updateFeature(geojson);
+            _javaConnector.updateFeature(geojson);
             break;
         case 'delete':
+            console.log("Delete feature")
             //Ask for delete confirmations
-            this.javaConnector.deleteFeature(geojson);
+            _javaConnector.deleteFeature(geojson);
+            break;
+        case 'pointonline':
+          var turfline=  fromoltoturf(f);
+          //getting start and line
+            getLineAnchorPoints(turfline);
+            // show a marker every 200 meters
+
+            var distance = prompt("Please enter distance", "200");
+            if (distance == null) {
+               return;
+            }
+          // var distance =200;
+
+            // get the line length in kilometers
+          var length = turf.lineDistance(turfline, {units:'meters'});
+          for (var i = 1; i <= length / distance; i++) {
+              var turfPoint = turf.along(turfline, i * distance,{units:'meters'});
+              snap.source_.addFeature(fromturftool(turfPoint));
+          }
+
+              break;
+        case 'linebearing':
+            var distance = prompt("Please enter distance in meters", "200");
+            if (distance == null) {
+                return;
+            }
+            var turfline=  fromoltoturf(f);
+            getLineAnchorPoints(turfline);
+
+            // show a marker every 200 meters
+
+            var distance = prompt("Please enter distance", "200");
+            if (distance == null) {
+                return;
+            }
+            // var distance =200;
+
+            // get the line length in kilometers
+            var length = turf.lineDistance(turfline, {units:'meters'});
+            for (var i = 1; i <= length / distance; i++) {
+                var turfPoint = turf.along(turfline, i * distance,{units:'meters'});
+                snap.source_.addFeature(fromturftool(turfPoint));
+            }
+
             break;
     }
 };
 
 
+function getLineAnchorPoints(turfline) {
+    //getting start and line
+    var startCoord = turfline.geometry.coordinates[0];
+    var endCoord =turfline.geometry.coordinates[turfline.geometry.coordinates.length-1];
+    var startp = new ol.Feature({
+        type: "startpoint",
+        geometry:  new ol.geom.Point(startCoord).transform('EPSG:4326', 'EPSG:3857')
+    });
+    var endp = new ol.Feature({
+        type: "endpoint",
+        geometry: new ol.geom.Point(endCoord).transform('EPSG:4326', 'EPSG:3857')
+    });
 
+    var point1 =  fromoltoturf(startp);
+    var point2 =  fromoltoturf(endp);
+    var midpoint = turf.midpoint(point1, point2);
+
+    startp.setId(snap.source_.getFeatures().length);
+    endp.setId(snap.source_.getFeatures().length+1);
+
+    snap.source_.addFeature(fromturftool(midpoint));
+    snap.source_.addFeature(startp);
+    snap.source_.addFeature(endp);
+}
+
+
+////dialog
+// dialog = $( "#dialog-form" ).dialog({
+//     autoOpen: false,
+//     height: 400,
+//     width: 350,
+//     modal: true,
+//     buttons: {
+//         "Create an account": addUser,
+//         Cancel: function() {
+//             dialog.dialog( "close" );
+//         }
+//     },
+//     close: function() {
+//         form[ 0 ].reset();
+//         allFields.removeClass( "ui-state-error" );
+//     }
+// });
+//
+// form = dialog.find( "form" ).on( "submit", function( event ) {
+//     event.preventDefault();
+//     addUser();
+// });
