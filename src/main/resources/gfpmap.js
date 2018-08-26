@@ -136,31 +136,67 @@ _map.addLayer(_selectedfeaturelayer);
 
 
 ////turf.js section start
-var turf_style = new ol.style.Style({
-    image: new ol.style.Circle({
+
+
+function getturf_style(feature, resolution)
+{
+
+    var type="nan";
+    color= '#a1bff2';
+    stcolor= '#a5d6f2';
+    try{
+        type= feature.get("type")
+    }catch (e){}
+    switch (type){
+        case 'mid':
+            color= '#f2372f';
+            stcolor= '#f22b76';
+            break;
+        case 'start':
+            color= '#51dd17';
+            stcolor= '#3ef226';
+            break;
+
+        case 'end':
+            color= '#51dd17';
+            stcolor= '#3ef226';
+            break;
+
+        case 'ancher':
+            color= '#a1bff2';
+            stcolor= '#a5d6f2';
+            break;
+    }
+
+    return new ol.style.Style({
+        image: new ol.style.Circle({
+            fill: new ol.style.Fill({
+                color:color
+            }),
+            stroke: new ol.style.Stroke({
+                color: stcolor,
+                width: 1
+            }),
+            radius: 3
+        }),
         fill: new ol.style.Fill({
-            color: '#a1bff2'
+            color: color
         }),
         stroke: new ol.style.Stroke({
-            color: '#a5d6f2',
+            color: stcolor,
             width: 1
-        }),
-        radius: 3
-    }),
-    fill: new ol.style.Fill({
-        color: '#a1bff2'
-    }),
-    stroke: new ol.style.Stroke({
-        color: '#a5d6f2',
-        width: 1
-    })
-});
+        })
+    });
+
+};
+
+
 var turf_source = new ol.source.Vector();
 
 var turf_vectorLayer = new ol.layer.Vector({
     source: turf_source,
     displayInLayerSwitcher:false,
-    style:turf_style
+    style:getturf_style
 });
 
 
@@ -173,10 +209,15 @@ function fromoltoturf(olobject) {
    return turf.toWgs84(turfo,{mutate:true});
 }
 
-function fromturftool(turfobject) {
+function fromturftool(turfobject,ismidpoint) {
     // convert the generated point to a OpenLayers feature
     var marker = _geojson_format.readFeature(turfobject);
     marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+    if(ismidpoint){
+        marker.set("type","mid");
+    }else{
+        marker.set("type","ancher")
+    }
     turf_source.addFeature(marker);
     turf_source.changed();
     return marker;
@@ -245,11 +286,18 @@ selectClick.on('select', function(e) {
         }
         fs.push( e.target.getFeatures().array_[i]);
     }
-    var obj = _geojson_format.writeFeatures(fs);
-    var geojson=JSON.stringify(obj);
-    console.log(geojson);
 
-    _javaConnector.singleClickAtVectorFeature(geojson);
+    if(_flag_enable_select){
+
+        var obj = _geojson_format.writeFeatures(fs);
+        var geojson=JSON.stringify(obj);
+        // console.log(geojson);
+        var wgs=cToWGS84([e.mapBrowserEvent.coordinate[1], e.mapBrowserEvent.coordinate[0]]);
+        jsMapView.getJavaConnector().singleClickAtVectorFeature(geojson,wgs[0],wgs[1])
+    }
+
+    // this.javaConnector.singleClickAtVectorFeature(geojson,coordinate[1], coordinate[0]);
+    // _javaConnector.singleClickAtVectorFeature(geojson);
     //perform wms select
     // if(!wmsquerylayersource)
     //     return;
@@ -293,9 +341,6 @@ function removeInteractions() {
     }catch (e){}
     _flag_enable_select=false;
 
-
-
-
     //remove measure interaction and other parts
     _map.on('pointermove', pointerMoveHandler);
 
@@ -304,11 +349,9 @@ function removeInteractions() {
             helpTooltipElement.classList.add('hidden');
     });
 
-    measute_source.clear();
+     measute_source.clear();
     _map.getOverlays().clear();
     _map.removeInteraction(draw);
-
-
 
 }
 
@@ -1189,58 +1232,6 @@ JSMapView.prototype.setBackgroundMapBaseURL = function (baseurl) {
     back_road.setSource(source_road);
     back_sattlite.setVisible(false);
 
-    return;
-/**
- *
-
-    back_road=    new ol.layer.Tile({
-        title: "آفلاین معابر",
-        baseLayer: true,
-        displayInLayerSwitcherImage:true,
-        displayInLayerSwitcher:false,
-        logo:background_base_url+'/geosuite/api/mbtile/road/0/0/0',
-
-        source: new ol.source.XYZ({
-            url: background_base_url+'/geosuite/api/mbtile/road/{z}/{x}/{y}'
-        })
-    });
-
-    back_sattlite=    new ol.layer.Tile({
-        title: "آفلاین ماهواره ای",
-        baseLayer: true,
-        displayInLayerSwitcherImage:true,
-        displayInLayerSwitcher:false,
-        logo:background_base_url+'geosuite/api/mbtile/sattlite/0/0/0',
-
-        source: new ol.source.XYZ({
-            url: background_base_url+'/geosuite/api/mbtile/sattlite/{z}/{x}/{y}'
-        })
-    });
-
-    back_sattlite.setZIndex(10);
-    back_road.setZIndex(11);
-
-    ov = new ol.control.Globe(
-        {	layers: [back_road,back_sattlite],
-            follow: true,
-            // align: 'right',
-            panAnimation: "elastic"
-        });
-
-    try {
-        _map.removeLayer(back_sattlite);
-
-    }catch (e){}
-
-    try {
-    _map.removeLayer(back_road);
-    }catch (e){}
-
-
-    _map.addLayer(back_sattlite);
-    _map.addLayer(back_road);
-    back_road.setVisible(false);
-    */
 };
 
 
@@ -1361,12 +1352,6 @@ JSMapView.prototype.addTestwms = function () {
     // set_editlayer('gas:GasNet_parcel','http://127.0.0.1:8080',1);
 };
 
-// var formatGML = new ol.format.GML({
-//     featureNS: 'http://127.0.0.1:8080/geoserver/gas/ows',
-//     featureType: 'gas:GasNet_riser',
-//     srsName: 'EPSG:3857'
-// });
-
 
 var sourceWFS;
 var layerWFS;
@@ -1379,7 +1364,7 @@ JSMapView.prototype.remove_edit_layer =function () {
 }
 
 
-JSMapView.prototype.set_editlayer = function (featureNS,url,maxres,title) {
+JSMapView.prototype.set_editlayer = function (featureNS,url,maxres,title,edittype) {
 
     console.log("set editlayer");
     // formatGML.featureType=featureNS;//'gas:GasNet_riser';
@@ -1432,7 +1417,7 @@ JSMapView.prototype.set_editlayer = function (featureNS,url,maxres,title) {
     // _map.addInteraction(interactionSnap);
 
     getlayersbbox(layerWFS,"http://127.0.0.1:8080/geoserver/gas/wms","GasNet_parcel");
-    enableEditorBar(layerWFS,'Area');
+    enableEditorBar(layerWFS,edittype);
 };
 
 
@@ -1535,10 +1520,6 @@ function enableEditorBar(vector,featuretype) {
         });
     mainbar.addControl(editbar);
 
-// Add selection tool:
-//  1- a toggle control with a select interaction
-//  2- an option bar to delete / get information on the selected feature
-
     var deletefeaturebtn=new ol.control.Button(
         {	html: '<i class="fa fa-minus-circle"></i>',
             title: "حذف عارضه",
@@ -1576,19 +1557,19 @@ function enableEditorBar(vector,featuretype) {
                 editorRemoveInteraction();
 
 
-                _map.addInteraction(interactionSelect);
+                _map.addInteraction(edit_interactionSelect);
                 interaction = new ol.interaction.Modify({
-                    features: interactionSelect.getFeatures()
+                    features: edit_interactionSelect.getFeatures()
                 });
                 _map.addInteraction(interaction);
                // {#map.addInteraction(interactionSnap);#}
                 dirty = {};
-                interactionSelect.getFeatures().on('add', function (e) {
+                edit_interactionSelect.getFeatures().on('add', function (e) {
                     e.element.on('change', function (e) {
                         dirty[e.target.getId()] = true;
                     });
                 });
-                interactionSelect.getFeatures().on('remove', function (e) {
+                edit_interactionSelect.getFeatures().on('remove', function (e) {
                     var f = e.element;
                     if (dirty[f.getId()]) {
                         delete dirty[f.getId()];
@@ -1613,7 +1594,7 @@ function enableEditorBar(vector,featuretype) {
         });
 
     var addfeaturebtn=new ol.control.Button(
-        {	html: '<i class="fa fa-plus-circle"></i>',
+        {	html: '<i class="fa fa-plus"></i>',
             title: "افزودن عارضه",
             handleClick: function()
             {
@@ -1687,8 +1668,11 @@ function enableEditorBar(vector,featuretype) {
         });
 
 
+    editbar.addControl(deletefeaturebtn);
+    editbar.addControl(modifyfeaturebtn);
+    editbar.addControl(addfeaturebtn);
 
-    var addfeaturebtn=new ol.control.Button(
+    var findpointonline=new ol.control.Button(
         {	html: '<i class="fa fa-line"></i>',
             title: "یافتن نقطه بر روی خط",
             handleClick: function()
@@ -1699,8 +1683,8 @@ function enableEditorBar(vector,featuretype) {
                     source: _selectedfeaturelayer.getSource()
                 });
                 //adding snap to grid interaction
-               // snapi.setDrawInteraction(interaction);
-              //  _map.addInteraction(snapi);
+                // snapi.setDrawInteraction(interaction);
+                //  _map.addInteraction(snapi);
                 _map.addInteraction(interaction);
                 interaction.on('drawend', function (e) {
                     transactWFS('pointonline', e.feature);
@@ -1712,13 +1696,32 @@ function enableEditorBar(vector,featuretype) {
             }
         });
 
+    var linebearing=new ol.control.Button(
+        {	html: '<i class="fa fa-"></i>',
+            title: "یافتن نقطه بر روی خط",
+            handleClick: function()
+            {
+                editorRemoveInteraction();
+                interaction = new ol.interaction.Draw({
+                    type: 'LineString',
+                    source: _selectedfeaturelayer.getSource()
+                });
+                //adding snap to grid interaction
+                // snapi.setDrawInteraction(interaction);
+                //  _map.addInteraction(snapi);
+                _map.addInteraction(interaction);
+                interaction.on('drawend', function (e) {
+                    transactWFS('pointonline', e.feature);
+                });
 
 
-    editbar.addControl(deletefeaturebtn);
-    editbar.addControl(modifyfeaturebtn);
-    editbar.addControl(addfeaturebtn);
+                enablesnapping(vector)
 
+            }
+        });
 
+    editbar.addControl(findpointonline);
+    editbar.addControl(linebearing);
 
 
     var sbar = new ol.control.Bar();
@@ -1860,10 +1863,11 @@ var interactionSelectPointerMove = new ol.interaction.Select({
     condition: ol.events.condition.pointerMove
 });
 
-var interactionSelect = new ol.interaction.Select({
+var edit_interactionSelect = new ol.interaction.Select({
     style: new ol.style.Style({
         stroke: new ol.style.Stroke({
-            color: '#FF2828'
+            color: '#f2b223',
+            width:1
         })
     })
 });
@@ -1871,8 +1875,8 @@ var interactionSelect = new ol.interaction.Select({
 function editorRemoveInteraction() {
     removeInteractions();
     _map.removeInteraction(interaction);
-    interactionSelect.getFeatures().clear();
-    _map.removeInteraction(interactionSelect);
+    edit_interactionSelect.getFeatures().clear();
+    _map.removeInteraction(edit_interactionSelect);
     _map.removeInteraction(snapi);
     _map.removeInteraction(snap);
 }
@@ -1885,15 +1889,14 @@ var transactWFS = function (mode, f) {
     var geojson=JSON.stringify(obj);
     switch (mode) {
         case 'insert':
-            _javaConnector.insertFeature(geojson);
+            jsMapView.getJavaConnector().insertFeature(geojson);
             break;
         case 'update':
-            _javaConnector.updateFeature(geojson);
+            jsMapView.getJavaConnector().updateFeature(geojson);
             break;
         case 'delete':
-            console.log("Delete feature")
-            //Ask for delete confirmations
-            _javaConnector.deleteFeature(geojson);
+            // console.log("Delete feature")
+            jsMapView.getJavaConnector().deleteFeature(geojson);
             break;
         case 'pointonline':
           var turfline=  fromoltoturf(f);
@@ -1921,22 +1924,18 @@ var transactWFS = function (mode, f) {
                 return;
             }
             var turfline=  fromoltoturf(f);
-            getLineAnchorPoints(turfline);
+            result= getLineAnchorPoints(turfline);
 
             // show a marker every 200 meters
 
-            var distance = prompt("Please enter distance", "200");
-            if (distance == null) {
+            var bearing = prompt("Please enter angle", result.bearing);
+            if (bearing == null) {
                 return;
             }
-            // var distance =200;
 
-            // get the line length in kilometers
-            var length = turf.lineDistance(turfline, {units:'meters'});
-            for (var i = 1; i <= length / distance; i++) {
-                var turfPoint = turf.along(turfline, i * distance,{units:'meters'});
-                snap.source_.addFeature(fromturftool(turfPoint));
-            }
+            var options = {units: 'meters'};
+
+            var destination = turf.rhumbDestination(result.start, distance, bearing, options);
 
             break;
     }
@@ -1956,16 +1955,35 @@ function getLineAnchorPoints(turfline) {
         geometry: new ol.geom.Point(endCoord).transform('EPSG:4326', 'EPSG:3857')
     });
 
+
+    var length = turf.lineDistance(turfline, {units:'meters'});
+    var turfPoint = turf.along(turfline, (length/2),{units:'meters'});
+    snap.source_.addFeature(fromturftool(turfPoint,true));
+
     var point1 =  fromoltoturf(startp);
     var point2 =  fromoltoturf(endp);
     var midpoint = turf.midpoint(point1, point2);
+    var bearing = turf.rhumbBearing(point1, point2);
 
     startp.setId(snap.source_.getFeatures().length);
     endp.setId(snap.source_.getFeatures().length+1);
+    var midpoint= fromturftool(midpoint,true);
+    startp.set("type","start");
+    endp.set("type","end");
 
-    snap.source_.addFeature(fromturftool(midpoint));
+    turf_source.addFeature(startp);
+    turf_source.addFeature(endp);
+    turf_source.changed();
+
+    snap.source_.addFeature(midpoint);
     snap.source_.addFeature(startp);
     snap.source_.addFeature(endp);
+
+    var result={}
+    result.bearing=bearing;
+    result.start=point1;
+
+    return result;
 }
 
 
@@ -1991,3 +2009,291 @@ function getLineAnchorPoints(turfline) {
 //     event.preventDefault();
 //     addUser();
 // });
+
+
+// Style function
+function getFeatureStyle (feature,resolution,style,txtstyle)
+{
+
+    var st= [];
+
+    var form_= style.form_?style.form_ :'marker';
+    var gradient_=style.gradient_?style.gradient_: false;
+    var glyph_=style.glyph_? style.glyph_: "fa-circle";
+    var color_=style.color_? style.color_: '#49abf2';
+    var fill_=style.fill_?style.fill_: "#f2b223";
+    var st_color_=style.st_color_?style.st_width: "#a1bff2";
+    var st_width=style.st_width?style.st_width: 1;
+
+
+
+
+
+    // Shadow style
+    if (true) st.push ( new ol.style.Style(
+        {	image: new ol.style.Shadow(
+                {	radius: 15,
+                    blur: 5,
+                    offsetX: 0,
+                    offsetY: 0,
+                    fill: new ol.style.Fill(
+                        {	color: "rgba(0,0,0,0.5)"
+                        })
+                })
+        }));
+    // Font style
+    st.push ( new ol.style.Style(
+        {	image: new ol.style.FontSymbol(
+                {	form: form_,
+                    gradient: gradient_,
+                    glyph: glyph_,//car[Math.floor(Math.random()*car.length)],
+                    fontSize: 1,
+                    radius: 15,
+                    //offsetX: -15,
+                    // rotation: Number($("#rotation").val())*Math.PI/180,
+                    rotateWithView: true,
+                    // offsetY: $("#offset").prop('checked') ? -Number($("#radius").val()):0 ,
+                    color:color_,
+                    fill: new ol.style.Fill(
+                        {	color: fill_
+                        }),
+                    stroke: new ol.style.Stroke(
+                        {	color: st_color_,
+                            width: st_width
+                        })
+                }),
+            stroke: new ol.style.Stroke(
+                {	width: 2,
+                    color: '#f80'
+                }),
+            fill: new ol.style.Fill(
+                {	color: [255, 136, 0, 0.6]
+                }),
+            text:createTextStyle(feature, resolution,txtstyle)
+        }));
+
+    if(txtstyle){
+        var txt_style= createTextStyle(feature, resolution,txtstyle);
+        // st[1].text=(txt_style);
+        // st[1].text=(txt_style);
+    }
+    return st;
+}
+
+function getStyle(feature, resolution)
+{
+    style={
+        form_:'marker',
+        gradient_:false,
+        glyph_:"fa-cab",
+        color_:'#392d09',
+        fill_:"#f2b223",
+        st_color_:"#a1bff2",
+        st_width:1
+    }
+    var txtstyle={
+        align:"Center",
+        baseline:'bottom',
+        size:'12px',
+        placement:'point',
+        overflow:false,
+        fillColor :'#000',
+        outlineColor:"#fff",
+        outlineWidth:2,
+        text:'none',
+        maxreso:2400,
+        field:'team_name',
+        offsetX:0,
+        offsetY:-20
+
+    }
+
+    var s = getFeatureStyle(feature,resolution,style,txtstyle);
+
+    return s;
+
+};
+
+var createTextStyle = function(feature, resolution, dom) {
+    var align = dom.align;
+    var baseline = dom.baseline;
+    var size = dom.size;
+    // var offsetX = parseInt(dom.offsetX.value, 10);
+    // var offsetY = parseInt(dom.offsetY.value, 10);
+    // var weight = dom.weight;
+    var placement = dom.placement ? dom.placement : undefined;
+    // var maxAngle = dom.maxangle ? parseFloat(dom.maxangle) : undefined;
+    var overflow = dom.overflow ? (dom.overflow == 'true') : undefined;
+    // var rotation = parseFloat(dom.rotation.value);
+    // if (dom.font.value == '\'Open Sans\'' && !openSansAdded) {
+    //     var openSans = document.createElement('link');
+    //     openSans.href = 'https://fonts.googleapis.com/css?family=Open+Sans';
+    //     openSans.rel = 'stylesheet';
+    //     document.getElementsByTagName('head')[0].appendChild(openSans);
+    //     openSansAdded = true;
+    // }
+    // var font = weight + ' ' + size + ' ' + dom.font.value;
+    var fillColor = dom.fillColor;
+    var outlineColor = dom.outlineColor;
+    var outlineWidth = parseInt(dom.outlineWidth);
+    var txt=getText(feature, resolution, dom);
+
+    // return new ol.style.Text({
+    //     textAlign: align == '' ? undefined : align,
+    //     textBaseline: baseline,
+    //     font: '12px Calibri,sans-serif',
+    //     text: txt,
+    //     fill: new ol.style.Fill({color: fillColor}),
+    //     stroke: new ol.style.Stroke({color: outlineColor, width: outlineWidth}),
+    //     offsetX: dom.offsetX,
+    //     offsetY: dom.offsetY,
+    //     // placement: placement,
+    //     // maxAngle: maxAngle,
+    //     // overflow: overflow,
+    //     // rotation: rotation
+    // });
+
+    return new ol.style.Text({
+        font: '12px tahoma,Calibri,sans-serif',
+        // fill: new ol.style.Fill({ color: '#000' }),
+        // stroke: new ol.style.Stroke({
+        //     color: '#fff', width: 2
+        // }),
+        // get the text from the feature - `this` is ol.Feature
+        // and show only under certain resolution
+        text: txt,
+        fill: new ol.style.Fill({color: fillColor}),
+        stroke: new ol.style.Stroke({color: outlineColor, width: outlineWidth}),
+        offsetX: dom.offsetX,
+        offsetY: dom.offsetY,
+    })
+
+};
+
+
+var getText = function(feature, resolution, dom) {
+    var type = dom.text;
+    var maxResolution = dom.maxreso;
+    var text='';
+    try{
+        text = feature.get(dom.field);
+    }catch (e){
+
+    }
+
+
+    if (resolution > maxResolution) {
+        text = '';
+    } else if (type == 'hide') {
+        text = '';
+    } else if (type == 'shorten') {
+        text = text.trunc(12);
+    } else if (type == 'wrap' && (!dom.placement || dom.placement != 'line')) {
+        text = stringDivider(text, 16, '\n');
+    }
+
+    return text;
+};
+
+/**
+ * @param {number} n The max number of characters to keep.
+ * @return {string} Truncated string.
+ */
+String.prototype.trunc = String.prototype.trunc ||
+    function(n) {
+        return this.length > n ? this.substr(0, n - 1) + '...' : this.substr(0);
+    };
+
+
+// http://stackoverflow.com/questions/14484787/wrap-text-in-javascript
+function stringDivider(str, width, spaceReplacer) {
+    if (str.length > width) {
+        var p = width;
+        while (p > 0 && (str[p] != ' ' && str[p] != '-')) {
+            p--;
+        }
+        if (p > 0) {
+            var left;
+            if (str.substring(p, p + 1) == '-') {
+                left = str.substring(0, p + 1);
+            } else {
+                left = str.substring(0, p);
+            }
+            var right = str.substring(p + 1);
+            return left + spaceReplacer + stringDivider(right, width, spaceReplacer);
+        }
+    }
+    return str;
+}
+
+
+
+////popup functions
+
+// Popup overlay
+var popup = new ol.Overlay.Popup (
+    {	popupClass: "default", //"tooltips", "warning" "black" "default", "tips", "shadow",
+        closeBox: true,
+        // onshow: function(){  },
+        // onclose: function(){  },
+        positioning: 'auto',
+        autoPan: true,
+        autoPanAnimation: { duration: 250 }
+    });
+
+
+
+var temvector_url;
+function autoreloadVector(temvector_url_) {
+    temvector_url='http://127.0.0.1/views/teamlocation/1';
+    reload();
+    window.setInterval(reload, 50000);
+
+}
+
+var teams_vector;
+var issues_vector;
+
+function reload() {
+
+var json='{"type": "FeatureCollection", "features": [{"id": 12, "type": "Feature", "geometry": {"type": "Point", "coordinates": [51.4473052, 35.7817819]}, "properties": {"team_id": 2, "team_mobile_key": "234", "team_name": "\u062a\u06cc\u0645 \u062f\u0648", "actor_id": 1, "actor_name": "\u0641\u0631\u062f\u06cc\u0633", "date_time": "2018-08-22 00:51:26"}}, {"id": 11, "type": "Feature", "geometry": {"type": "Point", "coordinates": [51.4473052, 35.7417819]}, "properties": {"team_id": 3, "team_mobile_key": "453", "team_name": "\u062a\u06cc\u0645 \u0633\u0647", "actor_id": 1, "actor_name": "\u0641\u0631\u062f\u06cc\u0633", "date_time": "2018-08-22 00:51:26"}}]}'
+        var features = _geojson_format.readFeatures(json,
+            {
+                defaultDataProjection: 'EPSG:4326',
+                featureProjection: 'EPSG:3857'
+            });
+        var vectorSource = new ol.source.Vector();
+        vectorSource.addFeatures(features);
+        var newLayer = new ol.layer.Vector({
+            source: vectorSource,
+            style: getStyle,
+            title: 'خودرو امداد',
+            description: 'some description'
+        });
+        _map.addLayer(newLayer);
+        vectorSource.once('change', function() {
+            console.log('remove')
+            if (teams_vector) {
+                _map.removeLayer(teams_vector);
+            }
+            teams_vector = newLayer;
+        });
+        // _selected_feature_source.addFeatures(features);
+
+
+
+
+
+
+    // var vectorSource = new ol.source.Vector({
+    //     format: new ol.format.GeoJSON({
+    //     defaultDataProjection: 'EPSG:4326',
+    //     featureProjection: 'EPSG:3857'
+    //      }),
+    //     url: temvector_url,
+    //     crossOrigin: 'anonymous'
+    //
+    // });
+
+
+}

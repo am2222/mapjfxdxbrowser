@@ -82,7 +82,6 @@ function JSMapView(javaConnector) {
     this.mapObjects = {};
     this.javaConnector = javaConnector;
     this.anchorsPatched = false;
-    this.bingMapsApiKey = '';
     this.wmsParams = {};
 }
 
@@ -108,7 +107,6 @@ JSMapView.prototype.init = function () {
             var coordinate = cToWGS84(evt.coordinate);
             if(!wmsquerylayersource){
                 this.javaConnector.debug("Please set wmsquerylayersource first");
-                //alert("Please set wmsquerylayersource first")
                 return;
             }
 
@@ -151,7 +149,7 @@ JSMapView.prototype.init = function () {
     }, this);
 
     _view.on('change:resolution', function (evt) {
-        this.javaConnector.zoomChanged(_view.getZoom());
+        // this.javaConnector.zoomChanged(_view.getZoom());
         this.reportExtent();
     }, this);
 

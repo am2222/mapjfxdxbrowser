@@ -664,8 +664,8 @@ JSMapView.prototype.getJavaConnector = function () {
  * @return JSMapView object
  */
 function getJSMapView() {
-    if(_javaConnector) {
-        var jsMapView = new JSMapView(_javaConnector);
+    if(window._javaConnector) {
+        var jsMapView = new JSMapView(window._javaConnector);
         jsMapView.init();
         return jsMapView;
     }

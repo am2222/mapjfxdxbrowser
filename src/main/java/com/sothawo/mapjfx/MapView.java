@@ -14,14 +14,11 @@
    limitations under the License.
 */
 package com.sothawo.mapjfx;
+import com.sothawo.mapjfx.event.*;
 import com.teamdev.jxbrowser.chromium.Browser;
 import com.teamdev.jxbrowser.chromium.BrowserCore;
 import com.teamdev.jxbrowser.chromium.internal.Environment;
 import com.teamdev.jxbrowser.chromium.javafx.BrowserView;
-import com.sothawo.mapjfx.event.ClickType;
-import com.sothawo.mapjfx.event.MapLabelEvent;
-import com.sothawo.mapjfx.event.MapViewEvent;
-import com.sothawo.mapjfx.event.MarkerEvent;
 import com.sothawo.mapjfx.offline.OfflineCache;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -1516,17 +1513,17 @@ public class MapView extends Region {
 
         public void deleteFeature(String geojson) {
             logger.finer(() -> "JS reports deleteFeature geojson: " + geojson);
-            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_DELETE_EVENT, geojson));
+            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_DELETE_EVENT, EditType.DELETE, geojson));
         }
 
         public void updateFeature(String geojson) {
             logger.finer(() -> "JS reports updateFeature geojson: " + geojson);
-            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_UPDATE_EVENT, geojson));
+            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_UPDATE_EVENT,EditType.EDITE, geojson));
         }
 
         public void insertFeature(String geojson) {
             logger.finer(() -> "JS reports insertFeature geojson: " + geojson);
-            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_ADD_EVENT, geojson));
+            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_ADD_EVENT,EditType.ADD, geojson));
         }
     }
 }

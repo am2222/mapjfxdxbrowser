@@ -49,6 +49,10 @@ public class MapViewEvent extends Event {
     /** clicked on a mouse position when select tool is enabled*/
     public static final EventType<MapViewEvent> MAP_SINGLE_CLICK_AT_FEATURE = new EventType<>(ANY, "MAP_SINGLE_CLICK_AT_FEATURE");
 
+    /** clicked on a mouse position when select tool is enabled*/
+    public static final EventType<MapViewEvent> MAP_SINGLE_CLICK_AT_WFS_FEATURE = new EventType<>(ANY, "MAP_SINGLE_CLICK_AT_WFS_FEATURE");
+
+
     /** clicked on a mouse position when DELETE tool is enabled*/
     public static final EventType<MapViewEvent> MAP_WFS_DELETE_EVENT = new EventType<>(ANY, "MAP_WFS_DELETE_EVENT");
     /** clicked on a mouse position when ADD tool is enabled*/
@@ -65,6 +69,12 @@ public class MapViewEvent extends Event {
     private final String url;
 
     private final String editorfeaturejeojson;
+
+
+    private final EditType editType;
+
+
+
     /**
      * creates an CoordinateEvent of the given type and name for a clicked object.
      *
@@ -79,7 +89,7 @@ public class MapViewEvent extends Event {
         this.extent = null;
         this.url=null;
         this.editorfeaturejeojson=null;
-
+        this.editType=EditType.NONE;
 
     }
 
@@ -97,7 +107,7 @@ public class MapViewEvent extends Event {
         this.coordinate = null;
         this.editorfeaturejeojson=null;
         this.url=null;
-
+        this.editType=EditType.NONE;
     }
 
     public MapViewEvent(EventType<? extends MapViewEvent> eventType, String url, Coordinate coordinate) {
@@ -106,14 +116,16 @@ public class MapViewEvent extends Event {
         this.coordinate = requireNonNull(coordinate);
         this.editorfeaturejeojson=null;
         this.url=requireNonNull(url);
+        this.editType=EditType.NONE;
     }
 
-    public MapViewEvent(EventType<? extends MapViewEvent> eventType, String editorfeaturejeojson) {
+    public MapViewEvent(EventType<? extends MapViewEvent> eventType,EditType type, String editorfeaturejeojson) {
         super(eventType);
         this.extent = null;
         this.coordinate = null;
         this.url=null;
         this.editorfeaturejeojson=requireNonNull(editorfeaturejeojson);
+        editType=type;
     }
     /**
      * @return the extent for a {@link #MAP_EXTENT} event.
@@ -139,5 +151,9 @@ public class MapViewEvent extends Event {
      */
     public String getEditorfeaturejeojson() {
         return editorfeaturejeojson;
+    }
+
+    public EditType getEditType(){
+        return this.editType;
     }
 }

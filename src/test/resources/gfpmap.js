@@ -1991,3 +1991,255 @@ function getLineAnchorPoints(turfline) {
 //     event.preventDefault();
 //     addUser();
 // });
+
+
+// Style function
+function getFeatureStyle (feature,resolution,style,txtstyle)
+{
+
+    var st= [];
+
+    var form_= style.form_?style.form_ :'marker';
+    var gradient_=style.gradient_?style.gradient_: false;
+    var glyph_=style.glyph_? style.glyph_: "fa-circle";
+    var color_=style.color_? style.color_: '#49abf2';
+    var fill_=style.fill_?style.fill_: "#f2b223";
+    var st_color_=style.st_color_?style.st_width: "#a1bff2";
+    var st_width=style.st_width?style.st_width: 1;
+
+
+
+    if(txtstyle){
+        var txt_style= createTextStyle(feature, resolution,txtstyle);
+        st.push(txt_style);
+    }
+
+    // Shadow style
+    if (true) st.push ( new ol.style.Style(
+        {	image: new ol.style.Shadow(
+                {	radius: 15,
+                    blur: 5,
+                    offsetX: 0,
+                    offsetY: 0,
+                    fill: new ol.style.Fill(
+                        {	color: "rgba(0,0,0,0.5)"
+                        })
+                })
+        }));
+    // Font style
+    st.push ( new ol.style.Style(
+        {	image: new ol.style.FontSymbol(
+                {	form: form_,
+                    gradient: gradient_,
+                    glyph: glyph_,//car[Math.floor(Math.random()*car.length)],
+                    fontSize: 1,
+                    radius: 10,
+                    //offsetX: -15,
+                    // rotation: Number($("#rotation").val())*Math.PI/180,
+                    rotateWithView: true,
+                    // offsetY: $("#offset").prop('checked') ? -Number($("#radius").val()):0 ,
+                    color:color_,
+                    fill: new ol.style.Fill(
+                        {	color: fill_
+                        }),
+                    stroke: new ol.style.Stroke(
+                        {	color: st_color_,
+                            width: st_width
+                        })
+                }),
+            stroke: new ol.style.Stroke(
+                {	width: 2,
+                    color: '#f80'
+                }),
+            fill: new ol.style.Fill(
+                {	color: [255, 136, 0, 0.6]
+                })
+        }));
+    return st;
+}
+
+function getStyle(feature, resolution)
+{
+    style={
+        form_:'marker',
+        gradient_:false,
+        glyph_:"fa-circle",
+        color_:'#49abf2',
+        fill_:"#f2b223",
+        st_color_:"#a1bff2",
+        st_width:1
+    }
+    var txtstyle={
+        align:"Center",
+        baseline:'bottom',
+        size:'12px',
+        placement:'point',
+        overflow:false,
+        fillColor :'#51dd17',
+        outlineColor:"#3ef226",
+        outlineWidth:1,
+        text:'wrap',
+        maxreso:2400,
+        field:'team_name'
+    }
+
+    var s = getFeatureStyle(feature,resolution,style,txtstyle);
+
+    return s;
+
+};
+
+var createTextStyle = function(feature, resolution, dom) {
+    var align = dom.align;
+    var baseline = dom.baseline;
+    var size = dom.size;
+    // var offsetX = parseInt(dom.offsetX.value, 10);
+    // var offsetY = parseInt(dom.offsetY.value, 10);
+    // var weight = dom.weight;
+    var placement = dom.placement ? dom.placement : undefined;
+    // var maxAngle = dom.maxangle ? parseFloat(dom.maxangle) : undefined;
+    var overflow = dom.overflow ? (dom.overflow == 'true') : undefined;
+    // var rotation = parseFloat(dom.rotation.value);
+    // if (dom.font.value == '\'Open Sans\'' && !openSansAdded) {
+    //     var openSans = document.createElement('link');
+    //     openSans.href = 'https://fonts.googleapis.com/css?family=Open+Sans';
+    //     openSans.rel = 'stylesheet';
+    //     document.getElementsByTagName('head')[0].appendChild(openSans);
+    //     openSansAdded = true;
+    // }
+    // var font = weight + ' ' + size + ' ' + dom.font.value;
+    var fillColor = dom.color;
+    var outlineColor = dom.outline;
+    var outlineWidth = parseInt(dom.outlineWidth, 10);
+
+    return new ol.style.Text({
+        textAlign: align == '' ? undefined : align,
+        textBaseline: baseline,
+        // font: font,
+        text: getText(feature, resolution, dom),
+        fill: new ol.style.Fill({color: fillColor}),
+        stroke: new ol.style.Stroke({color: outlineColor, width: outlineWidth}),
+        // offsetX: offsetX,
+        // offsetY: offsetY,
+        placement: placement,
+        // maxAngle: maxAngle,
+        overflow: overflow,
+        // rotation: rotation
+    });
+};
+
+
+var getText = function(feature, resolution, dom) {
+    var type = dom.text;
+    var maxResolution = dom.maxreso;
+    var text='';
+    try{
+        text = feature.get(dom.field);
+    }catch (e){
+
+    }
+
+
+    if (resolution > maxResolution) {
+        text = '';
+    } else if (type == 'hide') {
+        text = '';
+    } else if (type == 'shorten') {
+        text = text.trunc(12);
+    } else if (type == 'wrap' && (!dom.placement || dom.placement != 'line')) {
+        text = stringDivider(text, 16, '\n');
+    }
+
+    return text;
+};
+
+/**
+ * @param {number} n The max number of characters to keep.
+ * @return {string} Truncated string.
+ */
+String.prototype.trunc = String.prototype.trunc ||
+    function(n) {
+        return this.length > n ? this.substr(0, n - 1) + '...' : this.substr(0);
+    };
+
+
+// http://stackoverflow.com/questions/14484787/wrap-text-in-javascript
+function stringDivider(str, width, spaceReplacer) {
+    if (str.length > width) {
+        var p = width;
+        while (p > 0 && (str[p] != ' ' && str[p] != '-')) {
+            p--;
+        }
+        if (p > 0) {
+            var left;
+            if (str.substring(p, p + 1) == '-') {
+                left = str.substring(0, p + 1);
+            } else {
+                left = str.substring(0, p);
+            }
+            var right = str.substring(p + 1);
+            return left + spaceReplacer + stringDivider(right, width, spaceReplacer);
+        }
+    }
+    return str;
+}
+var temvector_url;
+function autoreloadVector(temvector_url_) {
+    temvector_url='http://127.0.0.1/views/teamlocation/1';
+    reload();
+    window.setInterval(reload, 50000);
+
+}
+
+var teams_vector;
+var issues_vector;
+
+function reload() {
+
+    $.ajax({
+        crossDomain:true,
+        url:temvector_url,
+        async:true,
+        dataType: 'jsonp',
+    }).then(function(response) {
+
+        var features = _geojson_format.readFeatures(response,
+            {
+                defaultDataProjection: 'EPSG:4326',
+                featureProjection: 'EPSG:3857'
+            });
+        var vectorSource = new ol.source.Vector();
+        vectorSource.addFeatures(features);
+        var newLayer = new ol.layer.Vector({
+            source: vectorSource,
+            style: getStyle,
+            title: 'خودرو امداد',
+            description: 'some description'
+        });
+        _map.addLayer(newLayer);
+        vectorSource.once('change', function() {
+            console.log('remove')
+            if (teams_vector) {
+                _map.removeLayer(teams_vector);
+            }
+            teams_vector = newLayer;
+        });
+        // _selected_feature_source.addFeatures(features);
+    });
+
+
+
+
+
+    // var vectorSource = new ol.source.Vector({
+    //     format: new ol.format.GeoJSON({
+    //     defaultDataProjection: 'EPSG:4326',
+    //     featureProjection: 'EPSG:3857'
+    //      }),
+    //     url: temvector_url,
+    //     crossOrigin: 'anonymous'
+    //
+    // });
+
+
+}

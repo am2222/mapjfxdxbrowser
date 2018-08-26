@@ -1,9 +1,6 @@
 package com.sothawo.mapjfx;
 
-import com.sothawo.mapjfx.event.ClickType;
-import com.sothawo.mapjfx.event.MapLabelEvent;
-import com.sothawo.mapjfx.event.MapViewEvent;
-import com.sothawo.mapjfx.event.MarkerEvent;
+import com.sothawo.mapjfx.event.*;
 import com.sun.media.jfxmediaimpl.MediaDisposer;
 import com.teamdev.jxbrowser.chromium.*;
 import com.teamdev.jxbrowser.chromium.events.*;
@@ -297,6 +294,8 @@ public class GfpMapViewJX extends StackPane implements MediaDisposer.Disposable 
                     Browser browser = event.getBrowser();
                     JSValue window = browser.executeJavaScriptAndReturnValue("window");
                     window.asObject().setProperty("_javaConnector", javaConnector);
+                    initialized.set(true);
+                    setCenterInMap();
                 }
             });
 
@@ -339,9 +338,8 @@ public class GfpMapViewJX extends StackPane implements MediaDisposer.Disposable 
                     if (null == jsMapView) {
                         logger.severe(() -> "error loading " + MAPVIEW_HTML + ", JavaScript not ready.");
                     } else {
-                        initialized.set(true);
-                        setCenterInMap();
-                        setZoomInMap();
+
+//                        setZoomInMap();
                         logger.finer("initialized.");
                     }
                 }
@@ -393,54 +391,6 @@ public class GfpMapViewJX extends StackPane implements MediaDisposer.Disposable 
         logger.finer(() -> "User Agent:     " + webengine.getUserAgent());
     }
 
-    /**
-     * processes a line from the html file, adding the base url and replacing template values.
-     *
-     * @param baseURL
-     *         the URL of the file
-     * @param line
-     *         the line to process, must be trimmed
-     * @return a List with the processed strings
-     */
-    private List<String> processHtmlLine(String baseURL, String line) {
-        // insert base url
-        if ("<head>".equalsIgnoreCase(line)) {
-            return Arrays.asList(line, "<base href=\"" + baseURL + "\">");
-        }
-
-        // check for replacement pattern
-        Matcher matcher = htmlIncludePattern.matcher(line);
-        if (matcher.matches()) {
-            String resource = baseURL + matcher.group(1);
-            if (CUSTOM_MAPVIEW_CSS.equals(matcher.group(1))) {
-                if (customMapviewCssURL.isPresent()) {
-                    logger.finer(
-                            () -> "loading custom mapview css from " + customMapviewCssURL.get().toExternalForm());
-                    try (Stream<String> lines = new BufferedReader(
-                            new InputStreamReader(customMapviewCssURL.get().openStream(), StandardCharsets.UTF_8))
-                            .lines()
-                    ) {
-                        return lines
-                                .filter(l -> !l.contains("<"))
-                                .collect(Collectors.toList());
-                    } catch (IOException e) {
-                        logger.log(Level.SEVERE, "loading resource " + resource, e);
-                    }
-                }
-            } else {
-                logger.finer(() -> "loading from " + resource);
-                try (Stream<String> lines = new BufferedReader(
-                        new InputStreamReader(new URL(resource).openStream(), StandardCharsets.UTF_8))
-                        .lines()
-                ) {
-                    return lines.collect(Collectors.toList());
-                } catch (IOException e) {
-                    logger.log(Level.SEVERE, "loading resource " + resource, e);
-                }
-            }
-        }      // return the line
-        return Collections.singletonList(line);
-    }
 
     /**
      * @return the readonly initialized property.
@@ -510,8 +460,14 @@ public class GfpMapViewJX extends StackPane implements MediaDisposer.Disposable 
 
     @Override
     public void dispose(){
-        if(null!=webengine)
-            webengine.dispose();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if(null!=webengine)
+                    webengine.dispose();
+            }
+        }).start();
     }
 
     public Browser getWebengine() {
@@ -684,13 +640,26 @@ public class GfpMapViewJX extends StackPane implements MediaDisposer.Disposable 
 
 
 
-    public void setEditLayer(String featureNS,String url,double maxres,String title){
+    public void setEditLayer(String featureNS,String url,double maxres,String title,GeomType geomtype){
 
         if (getInitialized()) {
             logger.finer(() -> "setEditLayer: " + featureNS +" "+url +" "+maxres+" "+title );
             JSValue function = jsMapView.asObject().getProperty("set_editlayer");
             if(function.asFunction().isFunction()){
-                function.asFunction().invoke(jsMapView.asObject(),featureNS,url,maxres,title);
+                String geom_type="Point";
+                switch (geomtype){
+
+                    case POINT:
+                        geom_type="Point";
+                        break;
+                    case LINE:
+                        geom_type="Line";
+                        break;
+                    case POLYGON:
+                        geom_type="Area";
+                        break;
+                }
+                function.asFunction().invoke(jsMapView.asObject(),featureNS,url,maxres,title,geom_type);
             }
         }
     }
@@ -712,9 +681,9 @@ public class GfpMapViewJX extends StackPane implements MediaDisposer.Disposable 
     /**
      * Connector object. Methods of an object of this class are called from JS code in the web page.
      */
-    public class JavaConnector {
+    public class JavaConnector  {
 
-        private final Logger logger = Logger.getLogger(MapView.JavaConnector.class.getCanonicalName());
+        private final Logger logger = Logger.getLogger(GfpMapViewJX.JavaConnector.class.getCanonicalName());
 
         /**
          * called when the user has moved the map. the coordinates are EPSG:4326 (WGS) values. The arguments are double
@@ -765,7 +734,7 @@ public class GfpMapViewJX extends StackPane implements MediaDisposer.Disposable 
             if (null != href && !href.isEmpty()) {
                 logger.finer(() -> "JS asks to browse to " + href);
                 if (!Desktop.isDesktopSupported()) {
-                    logger.warning(() -> "no desktop support for displaying " + href);
+                    logger.warning(() -> "no desktop support for  displaying " + href);
                 } else {
                     try {
                         Desktop.getDesktop().browse(new URI(href));
@@ -791,34 +760,10 @@ public class GfpMapViewJX extends StackPane implements MediaDisposer.Disposable 
             fireEvent(new MapViewEvent(MapViewEvent.MAP_CLICKED, coordinate));
         }
 
-        /**
-         * called when the user has context-clicked in the map. the coordinates are EPSG:4326 (WGS) values.
-         *
-         * @param lat
-         *         new latitude value
-         * @param lon
-         *         new longitude value
-         */
-        public void contextClickAt(double lat, double lon) {
-            Coordinate coordinate = new Coordinate(lat, lon);
-            logger.finer(() -> "JS reports context click at " + coordinate);
-            // fire a coordinate event to whom it may be of importance
-            fireEvent(new MapViewEvent(MapViewEvent.MAP_RIGHT_CLICKED, coordinate));
-        }
 
 
 
-        /**
-         * called when the user changed the zoom with the controls in the map.
-         *
-         * @param newZoom
-         *         new zoom value
-         */
-        public void zoomChanged(double newZoom) {
-            final long roundedZoom = Math.round(newZoom);
-            lastZoomFromMap.set(roundedZoom);
-            setZoom(roundedZoom);
-        }
+
 
         /**
          * called when the user selected an extent by dragging the mouse with modifier pressed.
@@ -861,19 +806,25 @@ public class GfpMapViewJX extends StackPane implements MediaDisposer.Disposable 
             fireEvent(new MapViewEvent(MapViewEvent.MAP_SINGLE_CLICK_AT_FEATURE, url,coordinate));
         }
 
+        public void singleClickAtVectorFeature(String geojson,double lat, double lon) {
+            Coordinate coordinate = new Coordinate(lat, lon);
+            logger.finer(() -> "JS reports singleClickAtVectorFeature url: " + geojson);
+           // fireEvent(new MapViewEvent(MapViewEvent.MAP_SINGLE_CLICK_AT_WFS_FEATURE, geojson,coordinate));
+        }
+
         public void deleteFeature(String geojson) {
             logger.finer(() -> "JS reports deleteFeature geojson: " + geojson);
-            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_DELETE_EVENT, geojson));
+            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_DELETE_EVENT, EditType.DELETE, geojson));
         }
 
         public void updateFeature(String geojson) {
             logger.finer(() -> "JS reports updateFeature geojson: " + geojson);
-            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_UPDATE_EVENT, geojson));
+            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_UPDATE_EVENT,EditType.EDITE, geojson));
         }
 
         public void insertFeature(String geojson) {
             logger.finer(() -> "JS reports insertFeature geojson: " + geojson);
-            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_ADD_EVENT, geojson));
+            fireEvent(new MapViewEvent(MapViewEvent.MAP_WFS_ADD_EVENT,EditType.ADD, geojson));
         }
     }
 }

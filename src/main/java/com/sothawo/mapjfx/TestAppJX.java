@@ -15,26 +15,27 @@
 */
 package com.sothawo.mapjfx;
 
-import com.sothawo.mapjfx.event.MapLabelEvent;
+import com.sothawo.mapjfx.event.GeomType;
 import com.sothawo.mapjfx.event.MapViewEvent;
-import com.sothawo.mapjfx.event.MarkerEvent;
-import com.teamdev.jxbrowser.chromium.Browser;
-import com.teamdev.jxbrowser.chromium.javafx.BrowserView;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
@@ -144,8 +145,8 @@ public class TestAppJX extends Application {
 
         mapView.addEventHandler(MapViewEvent.MAP_SINGLE_CLICK_AT_FEATURE, event -> {
             logger.info("MAP_SINGLE_CLICK_AT_FEATURE event: " + event.getURL());
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Get Data from this url : " + event.getURL() + " ?", ButtonType.OK);
-            alert.showAndWait();
+//            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Get Data from this url : " + event.getURL() + " ?", ButtonType.OK);
+//            alert.showAndWait();
             event.consume();
         });
 
@@ -155,6 +156,17 @@ public class TestAppJX extends Application {
             event.consume();
         });
 
+        mapView.addEventHandler(MapViewEvent.MAP_WFS_UPDATE_EVENT, event -> {
+            logger.info("MAP_WFS_UPDATE_EVENT event: " + event.getEditorfeaturejeojson());
+
+            event.consume();
+        });
+
+        mapView.addEventHandler(MapViewEvent.MAP_WFS_ADD_EVENT, event -> {
+            logger.info("MAP_WFS_ADD_EVENT event: " + event.getEditorfeaturejeojson());
+
+            event.consume();
+        });
     }
 
 
@@ -313,7 +325,7 @@ public class TestAppJX extends Application {
         enable_edit.setOnAction(new EventHandler<javafx.event.ActionEvent>() {
             @Override
             public void handle(javafx.event.ActionEvent event) {
-                  mapView.setEditLayer("gas:GasNet_parcel","http://127.0.0.1:8080",0.5,"پارسل (ویرایش)");
+                  mapView.setEditLayer("gas:GasNet_parcel","http://127.0.0.1:8080",0.5,"پارسل (ویرایش)", GeomType.POLYGON);
             }
         });
         hbox.getChildren().add(enable_edit);
