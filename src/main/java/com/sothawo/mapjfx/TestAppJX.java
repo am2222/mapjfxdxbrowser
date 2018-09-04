@@ -224,7 +224,7 @@ public class TestAppJX extends Application {
 //                mapView.setStartMeasure("Polygon");
                 //to init basemap you should setBackgroundMapBaseURL to the server ip, read this ip from a
                 //config file
-                mapView.setBackgroundMapBaseURL("http://127.0.0.1");
+                mapView.setBackgroundMapBaseURL("http://192.168.1.2");
                 mapView.setBackgroundMap("street");  //you can seve last base map in config and load it to save last status
 
 
@@ -243,7 +243,6 @@ public class TestAppJX extends Application {
                 mapView.setGlobeControl(globstatus);
 
                 ///TO load a layer from server (based on users access)
-
                 mapView.addlayer("wms","http://127.0.0.1:8080/geoserver/gas/wms","gas","GasNet_parcel",-1,
                         "پارسل ها",true,false);
 //                mapView.testwms();

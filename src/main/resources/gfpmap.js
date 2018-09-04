@@ -1697,8 +1697,8 @@ function enableEditorBar(vector,featuretype) {
         });
 
     var linebearing=new ol.control.Button(
-        {	html: '<i class="fa fa-"></i>',
-            title: "یافتن نقطه بر روی خط",
+        {	html: '<i class="fa .fa-long-arrow-up"></i>',
+            title: "نقطه با فاصله",
             handleClick: function()
             {
                 editorRemoveInteraction();
@@ -1711,7 +1711,7 @@ function enableEditorBar(vector,featuretype) {
                 //  _map.addInteraction(snapi);
                 _map.addInteraction(interaction);
                 interaction.on('drawend', function (e) {
-                    transactWFS('pointonline', e.feature);
+                    transactWFS('linebearing', e.feature);
                 });
 
 
